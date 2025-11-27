@@ -1,16 +1,19 @@
 import React from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useStore } from '../state/store'
-import { Building2, Plane, ReceiptText, ShieldCheck, LifeBuoy, LogOut, ShoppingCart } from 'lucide-react'
+import {Building2, Plane, ReceiptText, ShieldCheck, LifeBuoy, LogOut, ShoppingCart, Users,} from 'lucide-react'
 import clsx from 'clsx'
 
 const nav = [
   { to:'/dashboard', label:'Dashboard', icon: Building2 },
-  { to:'/search', label:'Search', icon: Plane },
+    { to:'/settings/company', label:'Setting', icon: Users },
+    { to:'/search', label:'Search', icon: Plane },
   { to:'/trip/new', label:'Trip basket', icon: ShoppingCart },
   { to:'/policies', label:'Policies', icon: ShieldCheck },
   { to:'/documents', label:'Documents', icon: ReceiptText },
   { to:'/support', label:'Support', icon: LifeBuoy },
+    { to:'/employees', label:'Employees', icon: Users },
+    { to:'/reports', label:'Reports', icon: Users },
 ]
 
 export default function Layout({ children }: { children: React.ReactNode }) {

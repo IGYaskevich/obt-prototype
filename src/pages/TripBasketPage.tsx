@@ -89,8 +89,13 @@ export default function TripBasketPage() {
             <button
               className="btn-primary w-full mt-2"
               onClick={()=>{
-                addTrip({ title:'Trip basket', total, type:'basket' })
-                nav('/documents?status=trip')
+                  addTrip({
+                      title: 'Trip basket',
+                      total,
+                      type: 'basket',
+                      status: worstPolicy === 'BLOCK' ? 'NEEDS_APPROVAL' : 'IN_PROGRESS',
+                  })
+                  nav('/documents?status=trip')
               }}
             >
               Confirm trip (mock)

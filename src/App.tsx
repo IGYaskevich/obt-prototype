@@ -15,6 +15,11 @@ import ExchangesPage from './pages/ExchangesPage'
 import SupportPage from './pages/SupportPage'
 import DocumentsPage from './pages/DocumentsPage'
 import NotFoundPage from './pages/NotFoundPage'
+import EmployeesPage from './pages/EmployeesPage'
+import ApprovalsPage from "./pages/ApprovalsPage.tsx";
+import ReportsPage from "./pages/ReportsPage.tsx";
+import CompanySettingsPage from "./pages/CompanySettingsPage.tsx";
+import EmployeeProfilePage from "./pages/EmployeeProfilePage.tsx";
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { user } = useStore()
@@ -39,7 +44,14 @@ export default function App() {
           <Route path="/exchanges" element={<Protected><ExchangesPage /></Protected>} />
           <Route path="/support" element={<Protected><SupportPage /></Protected>} />
           <Route path="/documents" element={<Protected><DocumentsPage /></Protected>} />
-          <Route path="*" element={<NotFoundPage />} />
+            <Route path="employees" element={<EmployeesPage />} />
+            {/* профиль конкретного сотрудника */}
+            <Route path="employees/:id" element={<EmployeeProfilePage />} />
+            <Route path="/approvals" element={<Protected><ApprovalsPage /></Protected>} />
+            <Route path="/reports" element={<ReportsPage />} />
+            <Route path="/settings/company" element={<CompanySettingsPage />} />
+
+            <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Layout>
     </StoreProvider>

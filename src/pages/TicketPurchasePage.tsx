@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import SectionHeader from '../components/SectionHeader'
 import { useStore } from '../state/store'
-import { ArrowLeft, AlertTriangle, CheckCircle2, Loader2, User, Users, Plus, Trash2, CreditCard, Building2, FileText } from 'lucide-react'
+import { ArrowLeft, AlertTriangle, CheckCircle2, Loader2, User, Users, Plus, Trash2, CreditCard, Building2, FileText, Sparkles } from 'lucide-react'
 
 type PassengerKind = 'EMPLOYEE' | 'GUEST'
 
@@ -94,7 +94,7 @@ export default function TicketPurchasePage() {
          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
          : flightPolicy === 'WARN'
            ? 'bg-amber-50 text-amber-700 border border-amber-200'
-           : 'bg-red-50 text-red-700 border border-red-200'
+           : 'bg-red-50 text-red-700 border-red-200'
 
    // -------- PASSENGERS --------
 
@@ -224,6 +224,48 @@ export default function TicketPurchasePage() {
       }
       alert('Simulated: download all documents (tickets + invoice + act) as ZIP/PDF package.')
    }
+
+   // -------- INLINE AI-ASSISTANT LOGIC --------
+
+   const hasDocsIssues = passengers.some(p => p.kind === 'EMPLOYEE' && !employeeHasValidDocs((p as PassengerEmployee).employeeId))
+
+   const aiHints: string[] = []
+
+   if (passengersCount === 0) {
+      aiHints.push('Вы ещё не добавили ни одного пассажира. Начните с сотрудника или гостя.')
+   } else {
+      aiHints.push(`Пассажиров в заказе: ${passengersCount}.`)
+   }
+
+   if (hasDocsIssues) {
+      aiHints.push('У одного или нескольких сотрудников нет валидных документов (паспорт/ID). Добавьте или обновите документы, чтобы избежать проблем при вылете.')
+   }
+
+   if (flightPolicy === 'WARN') {
+      aiHints.push('Этот рейс выходит за мягкие ограничения travel-политики (WARN). В реальном продукте может потребоваться согласование или выбор более дешёвого варианта.')
+   }
+
+   if (flightPolicy === 'BLOCK') {
+      aiHints.push('Рейс заблокирован travel-политикой (BLOCK). В этом прототипе покупка недоступна — попробуйте выбрать другой рейс.')
+   }
+
+   if (paymentMethod === 'PERSONAL_CARD') {
+      aiHints.push(
+         'Вы выбрали оплату личной картой. В этом режиме закрывающие документы обычно недоступны — используйте баланс компании или корпоративную карту для full B2B-комплаенса.',
+      )
+   } else {
+      aiHints.push('Выбран корпоративный способ оплаты. Закрывающие документы будут сформированы и доступны на странице «Документы».')
+   }
+
+   if (company.tariff === 'POSTPAY') {
+      aiHints.push(`Тариф Postpay: покупка уйдёт в отложенный платёж, счёт нужно будет оплатить в течение ${company.postpayDueDays} дней.`)
+   }
+
+   if (company.tariff === 'FLEX') {
+      aiHints.push('Тариф Flex: в реальном продукте вы могли бы бесплатно менять билеты и расширять условия возврата.')
+   }
+
+   const hasProblems = hasDocsIssues || flightPolicy !== 'OK'
 
    // -------- RENDER --------
 
@@ -377,7 +419,7 @@ export default function TicketPurchasePage() {
             </div>
          </div>
 
-         {/* 3. PAYMENT & SUMMARY */}
+         {/* 3. PAYMENT & SUMMARY + INLINE AI ASSISTANT */}
          <div className="card p-4 grid md:grid-cols-3 gap-4 text-sm">
             {/* 3.1 Payment methods */}
             <div className="md:col-span-2 space-y-3">
@@ -403,38 +445,61 @@ export default function TicketPurchasePage() {
                </div>
             </div>
 
-            {/* 3.2 Summary & actions */}
+            {/* 3.2 Summary & actions + AI assistant */}
             <div className="border-l border-slate-100 pl-0 md:pl-4 md:ml-4 text-xs flex flex-col justify-between">
-               <div className="space-y-2">
-                  <div className="font-semibold text-sm flex items-center gap-2">
-                     <Building2 size={16} className="text-slate-600" />
-                     Order summary
-                  </div>
-                  <div className="flex items-center justify-between">
-                     <span>Passengers</span>
-                     <span className="font-medium">{passengersCount || 1}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                     <span>Base price</span>
-                     <span>{selectedFlight.price.toLocaleString('ru-RU')} KZT</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                     <span>Tariff</span>
-                     <span className="badge-soft text-[10px] uppercase">{company.tariff}</span>
-                  </div>
-                  <div className="flex items-center justify-between border-t border-slate-200 pt-2 mt-2">
-                     <span className="font-semibold">Total</span>
-                     <span className="font-semibold">{totalAmount.toLocaleString('ru-RU')} KZT</span>
-                  </div>
-                  <div className="mt-2 text-[11px] text-slate-500">
-                     Closing documents: <strong>{closingDocsAvailable ? 'will be generated' : 'not available'}</strong> ({paymentLabel(paymentMethod)}).
-                  </div>
-                  {flightPolicy === 'BLOCK' && (
-                     <div className="mt-2 text-[11px] text-red-600 flex items-start gap-1">
-                        <AlertTriangle size={12} className="mt-[2px]" />
-                        <span>This flight is blocked by travel policy. In this prototype purchase is disabled for BLOCK options.</span>
+               <div className="space-y-3">
+                  <div className="space-y-2">
+                     <div className="font-semibold text-sm flex items-center gap-2">
+                        <Building2 size={16} className="text-slate-600" />
+                        Order summary
                      </div>
-                  )}
+                     <div className="flex items-center justify-between">
+                        <span>Passengers</span>
+                        <span className="font-medium">{passengersCount || 1}</span>
+                     </div>
+                     <div className="flex items-center justify-between">
+                        <span>Base price</span>
+                        <span>{selectedFlight.price.toLocaleString('ru-RU')} KZT</span>
+                     </div>
+                     <div className="flex items-center justify-between">
+                        <span>Tariff</span>
+                        <span className="badge-soft text-[10px] uppercase">{company.tariff}</span>
+                     </div>
+                     <div className="flex items-center justify-between border-t border-slate-200 pt-2 mt-2">
+                        <span className="font-semibold">Total</span>
+                        <span className="font-semibold">{totalAmount.toLocaleString('ru-RU')} KZT</span>
+                     </div>
+                     <div className="mt-2 text-[11px] text-slate-500">
+                        Closing documents: <strong>{closingDocsAvailable ? 'will be generated' : 'not available'}</strong> ({paymentLabel(paymentMethod)}).
+                     </div>
+                     {flightPolicy === 'BLOCK' && (
+                        <div className="mt-2 text-[11px] text-red-600 flex items-start gap-1">
+                           <AlertTriangle size={12} className="mt-[2px]" />
+                           <span>This flight is blocked by travel policy. In this prototype purchase is disabled for BLOCK options.</span>
+                        </div>
+                     )}
+                  </div>
+
+                  {/* INLINE AI ASSISTANT BLOCK */}
+                  <div
+                     className={`
+                mt-3 p-3 rounded-lg border text-[11px] space-y-2
+                ${hasProblems ? 'border-amber-300 bg-amber-50/70' : 'border-emerald-200 bg-emerald-50/70'}
+              `}
+                  >
+                     <div className="flex items-center gap-2 text-slate-800">
+                        <Sparkles size={14} className={hasProblems ? 'text-amber-600' : 'text-emerald-600'} />
+                        <span className="font-semibold">AI-помощник при оформлении</span>
+                     </div>
+                     <div className="space-y-1">
+                        {aiHints.map((hint, idx) => (
+                           <div key={idx} className="flex items-start gap-1 text-slate-800">
+                              <span className="mt-[2px] select-none">•</span>
+                              <span>{hint}</span>
+                           </div>
+                        ))}
+                     </div>
+                  </div>
                </div>
 
                <div className="mt-4 flex flex-col gap-2">

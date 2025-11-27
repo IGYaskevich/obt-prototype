@@ -23,6 +23,8 @@ import { AiAssistantWidget } from './components/AiAssistantWidget'
 import CommandPalette from './components/CommandPalette.tsx'
 import { QuickActionFloatingButton } from './components/QuickActionFloatingButton.tsx'
 import { HotkeysProvider } from './components/HotkeysProvider.tsx'
+import { GlobalShortcutsProvider } from './components/GlobalShortcutsProvider.tsx'
+import { KeyboardShortcutsModal } from './components/KeyboardShortcutsModal'
 
 function Protected({ children }: { children: React.ReactNode }) {
    const { user } = useStore()
@@ -33,137 +35,146 @@ function Protected({ children }: { children: React.ReactNode }) {
 function AppInner() {
    const { user } = useStore()
    const [quickOpen, setQuickOpen] = useState(false)
+   const [shortcutsOpen, setShortcutsOpen] = useState(false)
 
    const location = useLocation()
 
-   const isPublic = location.pathname === '/login' || location.pathname === '/' || location.pathname.startsWith('/signup')
-
+   const isPublic = location.pathname.startsWith('/login') || location.pathname.startsWith('/signup')
    return (
-      <Layout>
+      <>
          <HotkeysProvider toggleQuickActions={() => setQuickOpen(o => !o)} />
-         <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/login" element={<LoginPage />} />
 
-            <Route
-               path="/dashboard"
-               element={
-                  <Protected>
-                     <DashboardPage />
-                  </Protected>
-               }
-            />
-            <Route
-               path="/search"
-               element={
-                  <Protected>
-                     <SearchPage />
-                  </Protected>
-               }
-            />
-            <Route
-               path="/search/results"
-               element={
-                  <Protected>
-                     <ResultsPage />
-                  </Protected>
-               }
-            />
-            <Route
-               path="/ticket/purchase"
-               element={
-                  <Protected>
-                     <TicketPurchasePage />
-                  </Protected>
-               }
-            />
+         <Layout>
+            <Routes>
+               <Route path="/" element={<Navigate to="/dashboard" replace />} />
+               <Route path="/login" element={<LoginPage />} />
 
-            <Route
-               path="/tariffs"
-               element={
-                  <Protected>
-                     <TariffsPage />
-                  </Protected>
-               }
-            />
-            <Route
-               path="/policies"
-               element={
-                  <Protected>
-                     <PoliciesPage />
-                  </Protected>
-               }
-            />
-            <Route
-               path="/exchanges"
-               element={
-                  <Protected>
-                     <ExchangesPage />
-                  </Protected>
-               }
-            />
-            <Route
-               path="/support"
-               element={
-                  <Protected>
-                     <SupportPage />
-                  </Protected>
-               }
-            />
-            <Route
-               path="/documents"
-               element={
-                  <Protected>
-                     <DocumentsPage />
-                  </Protected>
-               }
-            />
-            <Route
-               path="/employees"
-               element={
-                  <Protected>
-                     <EmployeesPage />
-                  </Protected>
-               }
-            />
-            <Route
-               path="/employees/:id"
-               element={
-                  <Protected>
-                     <EmployeeProfilePage />
-                  </Protected>
-               }
-            />
+               <Route
+                  path="/dashboard"
+                  element={
+                     <Protected>
+                        <DashboardPage />
+                     </Protected>
+                  }
+               />
+               <Route
+                  path="/search"
+                  element={
+                     <Protected>
+                        <SearchPage />
+                     </Protected>
+                  }
+               />
+               <Route
+                  path="/search/results"
+                  element={
+                     <Protected>
+                        <ResultsPage />
+                     </Protected>
+                  }
+               />
+               <Route
+                  path="/ticket/purchase"
+                  element={
+                     <Protected>
+                        <TicketPurchasePage />
+                     </Protected>
+                  }
+               />
 
-            <Route
-               path="/reports"
-               element={
-                  <Protected>
-                     <ReportsPage />
-                  </Protected>
-               }
-            />
-            <Route
-               path="/settings/company"
-               element={
-                  <Protected>
-                     <CompanySettingsPage />
-                  </Protected>
-               }
-            />
+               <Route
+                  path="/tariffs"
+                  element={
+                     <Protected>
+                        <TariffsPage />
+                     </Protected>
+                  }
+               />
+               <Route
+                  path="/policies"
+                  element={
+                     <Protected>
+                        <PoliciesPage />
+                     </Protected>
+                  }
+               />
+               <Route
+                  path="/exchanges"
+                  element={
+                     <Protected>
+                        <ExchangesPage />
+                     </Protected>
+                  }
+               />
+               <Route
+                  path="/support"
+                  element={
+                     <Protected>
+                        <SupportPage />
+                     </Protected>
+                  }
+               />
+               <Route
+                  path="/documents"
+                  element={
+                     <Protected>
+                        <DocumentsPage />
+                     </Protected>
+                  }
+               />
+               <Route
+                  path="/employees"
+                  element={
+                     <Protected>
+                        <EmployeesPage />
+                     </Protected>
+                  }
+               />
+               <Route
+                  path="/employees/:id"
+                  element={
+                     <Protected>
+                        <EmployeeProfilePage />
+                     </Protected>
+                  }
+               />
 
-            <Route path="/signup/company" element={<CompanySignupPage />} />
+               <Route
+                  path="/reports"
+                  element={
+                     <Protected>
+                        <ReportsPage />
+                     </Protected>
+                  }
+               />
+               <Route
+                  path="/settings/company"
+                  element={
+                     <Protected>
+                        <CompanySettingsPage />
+                     </Protected>
+                  }
+               />
 
-            <Route path="*" element={<NotFoundPage />} />
-         </Routes>
-         {user && !isPublic && (
-            <>
-               <AiAssistantWidget />
-               <QuickActionFloatingButton open={quickOpen} setOpen={setQuickOpen} />{' '}
-            </>
-         )}{' '}
-         {user && <CommandPalette />}
-      </Layout>
+               <Route path="/signup/company" element={<CompanySignupPage />} />
+
+               <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+            {user && !isPublic && (
+               <>
+                  <AiAssistantWidget />
+               </>
+            )}
+            {user && (
+               <>
+                  <CommandPalette />
+                  <GlobalShortcutsProvider onToggleHelp={() => setShortcutsOpen(o => !o)} />
+                  <QuickActionFloatingButton open={quickOpen} setOpen={setQuickOpen} />
+                  <KeyboardShortcutsModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+               </>
+            )}
+         </Layout>
+      </>
    )
 }
 

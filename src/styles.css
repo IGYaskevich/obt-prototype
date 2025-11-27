@@ -43,3 +43,13 @@
 .badge-ok {
   @apply bg-emerald-50 text-emerald-700;
 }
+
+@keyframes glow {
+    0%   { opacity: 0.5; transform: scale(0.9); }
+    50%  { opacity: 1;   transform: scale(1.05); }
+    100% { opacity: 0.5; transform: scale(0.9); }
+}
+
+.animate-glow {
+    animation: glow 2.8s ease-in-out infinite;
+}

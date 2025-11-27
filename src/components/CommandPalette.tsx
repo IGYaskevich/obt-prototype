@@ -14,19 +14,33 @@ export default function CommandPalette() {
    const [cursor, setCursor] = useState(0)
 
    /* ----------------------------- HOTKEY: CMD+K ----------------------------- */
+   const isMac = navigator.platform.toUpperCase().includes('MAC')
+
    useEffect(() => {
-      const handler = (e: KeyboardEvent) => {
-         // cmd+k or ctrl+k
-         if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      const onKeyDown = (e: KeyboardEvent) => {
+         const key = e.key.toLowerCase()
+
+         // игнорируем ввод в инпутах
+         const target = (e.target as HTMLElement).tagName.toLowerCase()
+         if (['input', 'textarea', 'select'].includes(target)) return
+
+         // macOS: ⌘ + K
+         if (isMac && e.metaKey && key === 'k') {
             e.preventDefault()
             setOpen(o => !o)
+            return
          }
 
-         // esc to close
-         if (e.key === 'Escape') setOpen(false)
+         // Windows / Linux: Ctrl + Shift + K
+         if (!isMac && e.ctrlKey && e.shiftKey && key === 'k') {
+            e.preventDefault()
+            setOpen(o => !o)
+            return
+         }
       }
-      window.addEventListener('keydown', handler)
-      return () => window.removeEventListener('keydown', handler)
+
+      window.addEventListener('keydown', onKeyDown)
+      return () => window.removeEventListener('keydown', onKeyDown)
    }, [])
 
    /* ---------------------------- SEARCH LOGIC ---------------------------- */

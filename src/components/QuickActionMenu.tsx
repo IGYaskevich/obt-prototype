@@ -38,11 +38,6 @@ export function QuickActionMenu() {
          action: () => nav('/documents?download=all'),
       },
       {
-         label: 'Перейти в отчёты',
-         icon: BarChart2,
-         action: () => nav('/reports'),
-      },
-      {
          label: 'Открыть поддержку',
          icon: MessageSquare,
          action: () => nav('/support'),

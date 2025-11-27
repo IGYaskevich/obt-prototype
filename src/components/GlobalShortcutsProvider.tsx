@@ -2,8 +2,9 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-export function GlobalShortcutsProvider({ onToggleHelp }) {
+export function GlobalShortcutsProvider({ onToggleHelp }: { onToggleHelp: () => void }) {
    const nav = useNavigate()
+   const isMac = navigator.platform.toUpperCase().includes('MAC')
 
    useEffect(() => {
       function handler(e: KeyboardEvent) {
@@ -13,10 +14,16 @@ export function GlobalShortcutsProvider({ onToggleHelp }) {
          const target = (e.target as HTMLElement).tagName.toLowerCase()
          if (['input', 'textarea', 'select'].includes(target)) return
 
-         const isMac = navigator.platform.toUpperCase().includes('MAC')
+         // --- ОКНО ПОДСКАЗОК (HELP): Cmd+/ или Ctrl+Shift+/ ---
+         if (isMac && e.metaKey && key === '/') {
+            // macOS: ⌘ + /
+            e.preventDefault()
+            onToggleHelp()
+            return
+         }
 
-         // --- Окно подсказок: Cmd+/ или Ctrl+/ ---
-         if ((isMac && e.metaKey && key === '/') || (!isMac && e.ctrlKey && key === '/')) {
+         if (!isMac && e.ctrlKey && e.shiftKey && key === '/') {
+            // Windows/Linux: Ctrl + Shift + /
             e.preventDefault()
             onToggleHelp()
             return
@@ -46,7 +53,7 @@ export function GlobalShortcutsProvider({ onToggleHelp }) {
 
       window.addEventListener('keydown', handler)
       return () => window.removeEventListener('keydown', handler)
-   }, [nav, onToggleHelp])
+   }, [nav, onToggleHelp, isMac])
 
    return null
 }

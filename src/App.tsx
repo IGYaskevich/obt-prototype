@@ -12,10 +12,10 @@ import TariffsPage from './pages/TariffsPage'
 import PoliciesPage from './pages/PoliciesPage'
 import ExchangesPage from './pages/ExchangesPage'
 import SupportPage from './pages/SupportPage'
-import DocumentsPage from './pages/DocumentsPage'
+import BusinessTrips from './pages/BusinessTrips'
 import NotFoundPage from './pages/NotFoundPage'
 import EmployeesPage from './pages/EmployeesPage'
-import ReportsPage from './pages/ReportsPage'
+import AnalyticsPage from './pages/AnalyticsPage.tsx'
 import CompanySettingsPage from './pages/CompanySettingsPage'
 import EmployeeProfilePage from './pages/EmployeeProfilePage'
 import CompanySignupPage from './pages/CompanySignupPage'
@@ -115,10 +115,10 @@ function AppInner() {
                   }
                />
                <Route
-                  path="/documents"
+                  path="/business-trips"
                   element={
                      <Protected>
-                        <DocumentsPage />
+                        <BusinessTrips />
                      </Protected>
                   }
                />
@@ -140,10 +140,10 @@ function AppInner() {
                />
 
                <Route
-                  path="/reports"
+                  path="/analytics"
                   element={
                      <Protected>
-                        <ReportsPage />
+                        <AnalyticsPage />
                      </Protected>
                   }
                />

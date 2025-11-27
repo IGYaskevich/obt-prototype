@@ -410,7 +410,7 @@ export default function DashboardPage() {
          {/* Quick actions + support */}
          <div className="grid md:grid-cols-3 gap-4">
             <Action title="Book flight / train" icon={Plane} onClick={() => nav('/search')} disabled={!canBuy} />
-            <Action title="Closing documents" icon={FileText} onClick={() => nav('/documents')} />
+            <Action title="Closing documents" icon={FileText} onClick={() => nav('/business-trips')} />
             <Action title="Policies & approvals" icon={ShieldCheck} onClick={() => nav('/policies')} />
             <Action title="Employees & access" icon={Users} onClick={() => nav('/employees')} />
             <Action title={company.tariff === 'FLEX' ? '24/7 VIP support' : 'Support / FAQ'} icon={LifeBuoy} onClick={() => nav('/support')} />

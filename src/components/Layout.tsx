@@ -13,7 +13,6 @@ export default function Layout({ children }: Props) {
    const { user, company, logout } = useStore()
    const nav = useNavigate()
    const [sidebarOpen, setSidebarOpen] = useState(false)
-   const [qaOpen, setQaOpen] = useState(false)
 
    const handleLogout = () => {
       logout()
@@ -43,9 +42,9 @@ export default function Layout({ children }: Props) {
             <nav className="flex-1 px-2 py-3 space-y-1 text-sm">
                <NavItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
                <NavItem to="/search" icon={Search} label="Поиск" />
-               <NavItem to="/documents" icon={FileCheck2} label="Документы" />
+               <NavItem to="/business-trips" icon={FileCheck2} label="Командировки" />
                <NavItem to="/employees" icon={Users} label="Сотрудники" />
-               <NavItem to="/reports" icon={BarChart2} label="Отчёты" />
+               <NavItem to="/analytics" icon={BarChart2} label="Аналитика" />
                <NavItem to="/settings/company" icon={Settings} label="Настройки компании" />
                <NavItem to="/support" icon={LifeBuoy} label="Поддержка" />
                <NavItem to="/policies" icon={FileText} label="Политики" />
@@ -85,9 +84,9 @@ export default function Layout({ children }: Props) {
                   <nav className="flex-1 px-2 py-3 space-y-1 text-sm" onClick={closeSidebar}>
                      <NavItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
                      <NavItem to="/search" icon={Search} label="Поиск" />
-                     <NavItem to="/documents" icon={FileCheck2} label="Документы" />
+                     <NavItem to="/business-trips" icon={FileCheck2} label="Командировки" />
                      <NavItem to="/employees" icon={Users} label="Сотрудники" />
-                     <NavItem to="/reports" icon={BarChart2} label="Отчёты" />
+                     <NavItem to="/analytics" icon={BarChart2} label="Аналитика" />
                      <NavItem to="/settings/company" icon={Settings} label="Настройки компании" />
                      <NavItem to="/support" icon={LifeBuoy} label="Поддержка" />
                      <NavItem to="/policies" icon={FileText} label="Политики" />

@@ -1,15 +1,18 @@
+// @ts-nocheck
 import React, { useMemo, useState } from 'react'
 import SectionHeader from '../components/SectionHeader'
 import { Trip, useStore } from '../state/store'
-import { FileDown, Filter, Plane, ShoppingCart, TrendingUp } from 'lucide-react'
+import { Filter, Plane, ShoppingCart, TrendingUp, FileDown, Download, FileSpreadsheet, FileText, Receipt } from 'lucide-react'
 
 type StatusFilter = 'ALL' | 'COMPLETED' | 'IN_PROGRESS' | 'CANCELLED'
 type TypeFilter = 'ALL' | 'single' | 'basket'
 
-export default function ReportsPage() {
+type DocType = 'invoice' | 'act' | 'receipt'
+
+export default function TripsPage() {
    const { trips, employees, company } = useStore()
 
-   // Мок-данные, если стор пустой
+   // Мок, если стор пустой
    const [demoTrips] = useState<Trip[]>([
       {
          id: 'T1',
@@ -57,7 +60,7 @@ export default function ReportsPage() {
    const [dateFrom, setDateFrom] = useState<string>('')
    const [dateTo, setDateTo] = useState<string>('')
 
-   // уникальные отделы для фильтра
+   // уникальные департаменты
    const departments = useMemo(() => {
       const set = new Set<string>()
       employees.forEach(e => {
@@ -66,6 +69,7 @@ export default function ReportsPage() {
       return Array.from(set)
    }, [employees])
 
+   // обогащённые поездки
    const enrichedTrips = useMemo(() => {
       return sourceTrips.map(t => {
          const employee = employees.find(e => e.id === t.employeeId)
@@ -78,6 +82,7 @@ export default function ReportsPage() {
       })
    }, [sourceTrips, employees])
 
+   // фильтрация
    const filteredTrips = useMemo(() => {
       return enrichedTrips.filter(t => {
          if (statusFilter !== 'ALL' && t.status !== statusFilter) return false
@@ -97,6 +102,7 @@ export default function ReportsPage() {
       })
    }, [enrichedTrips, statusFilter, typeFilter, departmentFilter, dateFrom, dateTo])
 
+   // сводка
    const summary = useMemo(() => {
       const count = filteredTrips.length
       const total = filteredTrips.reduce((sum, t) => sum + t.total, 0)
@@ -109,6 +115,7 @@ export default function ReportsPage() {
 
    const exportCsv = () => {
       if (filteredTrips.length === 0) return
+
       const header = ['Trip ID', 'Title', 'Employee', 'Department', 'Type', 'Status', 'CreatedAt', 'Amount']
       const rows = filteredTrips.map(t => [t.id, t.title, t.employeeName, t.department, t.type, t.status, t.createdDate.toISOString(), String(t.total)])
       const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
@@ -117,16 +124,36 @@ export default function ReportsPage() {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = 'obt_reports_trips.csv'
+      a.download = 'obt_trips_report.csv'
       a.click()
       URL.revokeObjectURL(url)
+   }
+
+   const handleDownloadSingle = (trip: Trip & { employeeName?: string }, docType: DocType) => {
+      if (trip.status !== 'COMPLETED') {
+         alert('Documents are available only for completed trips.')
+         return
+      }
+
+      const label = docType === 'invoice' ? 'INVOICE' : docType === 'act' ? 'ACT' : 'RECEIPT'
+
+      alert(`Simulated: download ${label} for trip ${trip.id}`)
+   }
+
+   const handleDownloadAll = (trip: Trip & { employeeName?: string }) => {
+      if (trip.status !== 'COMPLETED') {
+         alert('Documents are available only for completed trips.')
+         return
+      }
+
+      alert(`Simulated: download all documents (invoice + act + receipt) as ZIP for trip ${trip.id}`)
    }
 
    return (
       <div className="space-y-6">
          <SectionHeader
-            title="Trips & spend reports"
-            subtitle="Filter and analyze business travel spend across trips, employees and departments"
+            title="Business trips"
+            subtitle="List of business trips with basic analytics and document downloads"
             right={
                <button className="btn-ghost flex items-center gap-1 text-sm" onClick={exportCsv} disabled={filteredTrips.length === 0}>
                   <FileDown size={16} />
@@ -138,18 +165,18 @@ export default function ReportsPage() {
          {/* Summary */}
          <div className="grid md:grid-cols-4 gap-4">
             <div className="card p-4">
-               <div className="text-xs text-slate-500">Trips in report</div>
+               <div className="text-xs text-slate-500">Trips</div>
                <div className="text-2xl font-semibold mt-1">{summary.count}</div>
                <div className="text-xs text-slate-500 mt-1">After applying filters</div>
             </div>
             <div className="card p-4">
                <div className="text-xs text-slate-500">Total spend</div>
-               <div className="text-2xl font-semibold mt-1">{summary.total.toLocaleString()} ₸</div>
+               <div className="text-2xl font-semibold mt-1">{summary.total.toLocaleString('ru-RU')} ₸</div>
                <div className="text-xs text-slate-500 mt-1">All amounts are demo values</div>
             </div>
             <div className="card p-4">
                <div className="text-xs text-slate-500">Avg per trip</div>
-               <div className="text-2xl font-semibold mt-1">{summary.avg.toLocaleString()} ₸</div>
+               <div className="text-2xl font-semibold mt-1">{summary.avg.toLocaleString('ru-RU')} ₸</div>
                <div className="text-xs text-slate-500 mt-1">Total / trips</div>
             </div>
             <div className="card p-4 bg-slate-50/60">
@@ -225,7 +252,7 @@ export default function ReportsPage() {
             {filteredTrips.length === 0 && <div className="px-4 py-6 text-sm text-slate-500">No trips match current filters. Try resetting filters or changing period.</div>}
 
             {filteredTrips.length > 0 && (
-               <table className="w-full text-sm">
+               <table className="w-full text-sm border-collapse">
                   <thead className="bg-slate-50 text-xs text-slate-500">
                      <tr>
                         <th className="px-4 py-2 text-left">Date</th>
@@ -235,44 +262,86 @@ export default function ReportsPage() {
                         <th className="px-4 py-2 text-left">Type</th>
                         <th className="px-4 py-2 text-left">Status</th>
                         <th className="px-4 py-2 text-right">Amount</th>
+                        <th className="px-4 py-2 text-left">Documents</th>
+                        <th className="px-4 py-2 text-right">Download</th>
                      </tr>
                   </thead>
                   <tbody>
                      {filteredTrips
                         .slice()
                         .sort((a, b) => b.createdDate.getTime() - a.createdDate.getTime())
-                        .map(t => (
-                           <tr key={t.id} className="border-t border-slate-100">
-                              <td className="px-4 py-2 align-top text-xs text-slate-500">{t.createdDate.toLocaleDateString()}</td>
-                              <td className="px-4 py-2 align-top">
-                                 <div className="font-medium">{t.title}</div>
-                              </td>
-                              <td className="px-4 py-2 align-top">
-                                 <div>{t.employeeName}</div>
-                              </td>
-                              <td className="px-4 py-2 align-top text-xs text-slate-500">{t.department || '—'}</td>
-                              <td className="px-4 py-2 align-top text-xs">
-                                 <TypeBadge type={t.type} />
-                              </td>
-                              <td className="px-4 py-2 align-top text-xs">
-                                 <StatusBadge status={t.status} />
-                              </td>
-                              <td className="px-4 py-2 align-top text-right whitespace-nowrap">{t.total.toLocaleString()} ₸</td>
-                           </tr>
-                        ))}
+                        .map(t => {
+                           const docsAvailable = t.status === 'COMPLETED'
+                           return (
+                              <tr key={t.id} className="border-t border-slate-100">
+                                 <td className="px-4 py-2 align-top text-xs text-slate-500">{t.createdDate.toLocaleDateString()}</td>
+                                 <td className="px-4 py-2 align-top">
+                                    <div className="font-medium">{t.title}</div>
+                                 </td>
+                                 <td className="px-4 py-2 align-top">
+                                    <div>{t.employeeName}</div>
+                                 </td>
+                                 <td className="px-4 py-2 align-top text-xs text-slate-500">{t.department || '—'}</td>
+                                 <td className="px-4 py-2 align-top text-xs">
+                                    <TypeBadge type={t.type} />
+                                 </td>
+                                 <td className="px-4 py-2 align-top text-xs">
+                                    <StatusBadge status={t.status} />
+                                 </td>
+                                 <td className="px-4 py-2 align-top text-right whitespace-nowrap">{t.total.toLocaleString('ru-RU')} ₸</td>
+                                 <td className="px-4 py-2 align-top text-xs">
+                                    <div className="flex flex-wrap gap-1">
+                                       <DocPill label="Invoice" icon={<FileSpreadsheet size={11} />} disabled={!docsAvailable} onClick={() => handleDownloadSingle(t, 'invoice')} />
+                                       <DocPill label="Act" icon={<FileText size={11} />} disabled={!docsAvailable} onClick={() => handleDownloadSingle(t, 'act')} />
+                                       <DocPill label="Receipt" icon={<Receipt size={11} />} disabled={!docsAvailable} onClick={() => handleDownloadSingle(t, 'receipt')} />
+                                    </div>
+                                 </td>
+                                 <td className="px-4 py-2 align-top text-right">
+                                    <button
+                                       className="btn-primary h-7 px-3 inline-flex items-center gap-1 text-xs disabled:opacity-50"
+                                       disabled={!docsAvailable}
+                                       onClick={() => handleDownloadAll(t)}
+                                    >
+                                       <Download size={12} />
+                                       All
+                                    </button>
+                                 </td>
+                              </tr>
+                           )
+                        })}
                   </tbody>
                </table>
             )}
 
             <div className="border-t border-slate-100 px-4 py-2 text-xs text-slate-500">
-               This is a demo reporting screen. In a real OBT, you would be able to group by cost center, export to Excel, and schedule automatic email reports.
+               This is a demo trips screen. In a real OBT you would see cost centers, project codes, real documents and deeper analytics.
             </div>
          </div>
       </div>
    )
 }
 
-/* === Badges === */
+/* === UI helpers === */
+
+function DocPill({ label, icon, disabled, onClick }: { label: string; icon: React.ReactNode; disabled?: boolean; onClick: () => void }) {
+   let base = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] border transition'
+
+   if (disabled) {
+      return (
+         <span className={base + ' border-slate-200 text-slate-400 bg-slate-50 cursor-not-allowed'}>
+            {icon}
+            {label} (n/a)
+         </span>
+      )
+   }
+
+   return (
+      <button type="button" className={base + ' border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100'} onClick={onClick}>
+         <FileDown size={11} />
+         {label}
+      </button>
+   )
+}
 
 function TypeBadge({ type }: { type: Trip['type'] }) {
    const Icon = type === 'single' ? Plane : ShoppingCart

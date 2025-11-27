@@ -23,7 +23,7 @@ export function QuickActionFloatingButton({ open, setOpen }) {
       { label: 'Добавить сотрудника', icon: Users, action: () => setAddOpen(true) },
 
       { label: 'Скачать документы', icon: Download, action: () => nav('/documents?download=all') },
-      { label: 'Перейти в отчёты', icon: BarChart2, action: () => nav('/reports') },
+      // { label: 'Перейти в отчёты', icon: BarChart2, action: () => nav('/reports') },
       { label: 'Поддержка', icon: MessageSquare, action: () => nav('/support') },
    ]
 

@@ -51,7 +51,7 @@ export function KeyboardShortcutsModal({ open, onClose }) {
                   <div className="font-semibold text-slate-700 mb-1">Действия и поиск</div>
                   <div className="space-y-1">
                      <ShortcutRow combo={isMac ? '⇧ A' : 'Ctrl A'} label="Открыть быстрые действия" />
-                     <ShortcutRow combo={isMac ? '⌘ K' : 'Ctrl K'} label="Открыть командную палитру (поиск)" />
+                     <ShortcutRow combo={isMac ? '⌘ K' : 'Ctrl Shift K'} label="Открыть командную палитру (поиск)" />
                      <ShortcutRow combo={isMac ? '⌘ /' : 'Ctrl /'} label="Показать это окно подсказок" />
                      <ShortcutRow combo="Shift N" label="Открыть центр уведомлений" />
                   </div>

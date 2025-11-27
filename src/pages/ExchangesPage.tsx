@@ -4,9 +4,9 @@ import { useStore } from '../state/store'
 
 export default function ExchangesPage() {
   const { company } = useStore()
-  const [mode, setMode] = useState<'cancel'|'change'>('change')
+  const [mode, setMode] = useState<'cancel' | 'change'>('change')
 
-  const allowed = company?.tariff==='FLEX' || company?.tariff==='POSTPAY'
+  const allowed = company?.tariff === 'FLEX' || company?.tariff === 'POSTPAY'
 
   return (
     <div className="space-y-5">
@@ -23,13 +23,17 @@ export default function ExchangesPage() {
           <div className="card p-4">
             <div className="text-sm font-medium">Select action</div>
             <div className="flex gap-2 mt-2">
-              <button className={mode==='change'?'btn-primary':'btn-ghost'} onClick={()=>setMode('change')}>Change dates</button>
-              <button className={mode==='cancel'?'btn-primary':'btn-ghost'} onClick={()=>setMode('cancel')}>Cancel ticket</button>
+              <button className={mode === 'change' ? 'btn-primary' : 'btn-ghost'} onClick={() => setMode('change')}>
+                Change dates
+              </button>
+              <button className={mode === 'cancel' ? 'btn-primary' : 'btn-ghost'} onClick={() => setMode('cancel')}>
+                Cancel ticket
+              </button>
             </div>
           </div>
 
           <div className="card p-4 space-y-2">
-            {mode==='change' && (
+            {mode === 'change' && (
               <>
                 <div className="text-sm font-medium">New date</div>
                 <input type="date" className="input" defaultValue="2025-12-03" />
@@ -37,10 +41,12 @@ export default function ExchangesPage() {
                 <button className="btn-primary mt-2">Confirm change</button>
               </>
             )}
-            {mode==='cancel' && (
+            {mode === 'cancel' && (
               <>
                 <div className="text-sm font-medium">Refund terms</div>
-                <div className="text-sm text-slate-600">Penalty 10% (mock). Remaining goes to original payment method.</div>
+                <div className="text-sm text-slate-600">
+                  Penalty 10% (mock). Remaining goes to original payment method.
+                </div>
                 <button className="btn-primary mt-2">Confirm cancellation</button>
               </>
             )}

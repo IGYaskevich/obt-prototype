@@ -1,0 +1,17 @@
+src/shared/services
+
+# Игнорировать весь node_modules (обычно и так по умолчанию)
+node_modules
+docker
+manifests
+
+
+.gitlab-ci.yml
+.gitignore
+.prettierrc.js
+eslint.config.js
+package.json
+package-lock.json
+README.md
+vite.config.ts
+tsconfig.tsbuildinfo

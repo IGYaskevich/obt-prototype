@@ -1,7 +1,13 @@
 import React from 'react'
 
-export default function SectionHeader({ title, subtitle, right }:{
-  title: string; subtitle?: string; right?: React.ReactNode
+export default function SectionHeader({
+  title,
+  subtitle,
+  right,
+}: {
+  title: string
+  subtitle?: string
+  right?: React.ReactNode
 }) {
   return (
     <div className="flex items-start justify-between gap-3 mb-4">

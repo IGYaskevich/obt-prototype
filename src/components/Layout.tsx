@@ -1,90 +1,201 @@
-import React from 'react'
-import { Link, NavLink, useNavigate } from 'react-router-dom'
+// @ts-nocheck
+import React, { useState } from 'react'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { useStore } from '../state/store'
-import { Building2, Plane, ReceiptText, ShieldCheck, LifeBuoy, LogOut, ShoppingCart, Users } from 'lucide-react'
-import clsx from 'clsx'
+import { BarChart2, FileCheck2, FileText, LayoutDashboard, LifeBuoy, LogOut, Search, Settings, Users } from 'lucide-react'
+import { NotificationCenter } from './NotificationCenter.tsx'
 
-const nav = [
-  { to: '/dashboard', label: 'Dashboard', icon: Building2 },
-  { to: '/settings/company', label: 'Setting', icon: Users },
-  { to: '/search', label: 'Search', icon: Plane },
-  { to: '/policies', label: 'Policies', icon: ShieldCheck },
-  { to: '/documents', label: 'Documents', icon: ReceiptText },
-  { to: '/support', label: 'Support', icon: LifeBuoy },
-  { to: '/employees', label: 'Employees', icon: Users },
-  { to: '/reports', label: 'Reports', icon: Users },
-]
+type Props = {
+   children: React.ReactNode
+}
 
-export default function Layout({ children }: { children: React.ReactNode }) {
-  const { user, company, logout } = useStore()
-  const navigate = useNavigate()
+export default function Layout({ children }: Props) {
+   const { user, company, logout } = useStore()
+   const nav = useNavigate()
+   const [sidebarOpen, setSidebarOpen] = useState(false)
+   const [qaOpen, setQaOpen] = useState(false)
 
-  if (!user || !company) return <>{children}</>
+   const handleLogout = () => {
+      logout()
+      nav('/login')
+   }
 
-  return (
-    <div className="min-h-screen grid md:grid-cols-[260px_1fr]">
-      <aside className="hidden md:flex flex-col bg-white border-r border-slate-100 p-4">
-        <Link to="/dashboard" className="flex items-center gap-2 px-2 py-2">
-          <div className="h-9 w-9 rounded-xl bg-brand-500 text-white flex items-center justify-center font-bold">
-            OBT
-          </div>
-          <div className="leading-tight">
-            <div className="text-sm font-semibold">{user.companyName}</div>
-            <div className="text-xs text-slate-500">Tariff: {company.tariff}</div>
-          </div>
-        </Link>
+   const closeSidebar = () => setSidebarOpen(false)
 
-        <nav className="mt-4 flex-1 space-y-1">
-          {nav.map(n => {
-            const Icon = n.icon
-            return (
-              <NavLink
-                key={n.to}
-                to={n.to}
-                className={({ isActive }) =>
-                  clsx(
-                    'flex items-center gap-2 rounded-xl px-3 py-2 text-sm',
-                    isActive ? 'bg-brand-50 text-brand-600' : 'hover:bg-slate-50 text-slate-700',
-                  )
-                }
-              >
-                <Icon size={16} />
-                {n.label}
-              </NavLink>
-            )
-          })}
-        </nav>
+   // ❗ НЕАВТОРИЗОВАННЫЙ ЮЗЕР — БЕЗ САЙДБАРА / ХЕДЕРА
+   if (!user) {
+      return (
+         <div className="min-h-screen flex bg-slate-50 text-slate-900">
+            <main className="flex-1 p-4 md:p-6 flex items-center justify-center">{children}</main>
+         </div>
+      )
+   }
 
-        <button
-          onClick={() => {
-            logout()
-            navigate('/login')
-          }}
-          className="btn-ghost justify-start gap-2"
-        >
-          <LogOut size={16} /> Logout
-        </button>
-      </aside>
-
-      <div className="flex flex-col">
-        <header className="sticky top-0 z-10 bg-white border-b border-slate-100">
-          <div className="container-page h-14 flex items-center justify-between">
-            <div className="md:hidden flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-brand-500 text-white flex items-center justify-center font-bold text-xs">
-                OBT
-              </div>
-              <div className="text-sm font-semibold">OBT Prototype</div>
+   // ✅ АВТОРИЗОВАННЫЙ — ПОЛНЫЙ LAYOUT
+   return (
+      <div className="min-h-screen flex bg-slate-50 text-slate-900">
+         {/* SIDEBAR: desktop */}
+         <aside className="hidden md:flex md:w-64 flex-col border-r border-slate-200 bg-white">
+            <div className="h-14 px-4 flex items-center border-b border-slate-100">
+               <div className="font-semibold text-sm tracking-tight">Freedom Business Travel</div>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="badge-brand">Tariff: {company.tariff}</span>
-              <button onClick={() => navigate('/tariffs')} className="btn-ghost">
-                Change tariff
-              </button>
+
+            <nav className="flex-1 px-2 py-3 space-y-1 text-sm">
+               <NavItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
+               <NavItem to="/search" icon={Search} label="Поиск" />
+               <NavItem to="/documents" icon={FileCheck2} label="Документы" />
+               <NavItem to="/employees" icon={Users} label="Сотрудники" />
+               <NavItem to="/reports" icon={BarChart2} label="Отчёты" />
+               <NavItem to="/settings/company" icon={Settings} label="Настройки компании" />
+               <NavItem to="/support" icon={LifeBuoy} label="Поддержка" />
+               <NavItem to="/policies" icon={FileText} label="Политики" />
+            </nav>
+
+            <div className="border-t border-slate-100 px-3 py-3 text-xs space-y-2">
+               {company && (
+                  <div className="flex flex-col gap-0.5">
+                     <div className="font-semibold text-slate-700">{company.tariff} tariff</div>
+                     <div className="text-slate-500">Balance: {company.balance.toLocaleString()} ₸</div>
+                  </div>
+               )}
+               {user && (
+                  <div className="flex items-center justify-between">
+                     <div className="text-slate-500 truncate max-w-[160px]">{user.email}</div>
+                     <button onClick={handleLogout} className="inline-flex items-center gap-1 text-[11px] text-slate-500 hover:text-red-500">
+                        <LogOut size={14} />
+                        <span>Выйти</span>
+                     </button>
+                  </div>
+               )}
             </div>
-          </div>
-        </header>
-        <main className="container-page py-6">{children}</main>
+         </aside>
+
+         {/* SIDEBAR: mobile (overlay) */}
+         {sidebarOpen && (
+            <>
+               <div className="fixed inset-0 z-30 bg-black/30 md:hidden" onClick={closeSidebar} />
+               <aside className="fixed inset-y-0 left-0 z-40 w-64 flex flex-col border-r border-slate-200 bg-white md:hidden">
+                  <div className="h-14 px-4 flex items-center justify-between border-b border-slate-100">
+                     <div className="font-semibold text-sm tracking-tight">OBT Prototype</div>
+                     <button className="text-xs text-slate-500 hover:text-slate-800" onClick={closeSidebar}>
+                        Закрыть
+                     </button>
+                  </div>
+
+                  <nav className="flex-1 px-2 py-3 space-y-1 text-sm" onClick={closeSidebar}>
+                     <NavItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
+                     <NavItem to="/search" icon={Search} label="Поиск" />
+                     <NavItem to="/documents" icon={FileCheck2} label="Документы" />
+                     <NavItem to="/employees" icon={Users} label="Сотрудники" />
+                     <NavItem to="/reports" icon={BarChart2} label="Отчёты" />
+                     <NavItem to="/settings/company" icon={Settings} label="Настройки компании" />
+                     <NavItem to="/support" icon={LifeBuoy} label="Поддержка" />
+                     <NavItem to="/policies" icon={FileText} label="Политики" />
+                  </nav>
+
+                  <div className="border-t border-slate-100 px-3 py-3 text-xs space-y-2">
+                     {company && (
+                        <div className="flex flex-col gap-0.5">
+                           <div className="font-semibold text-slate-700">{company.tariff} tariff</div>
+                           <div className="text-slate-500">Balance: {company.balance.toLocaleString()} ₸</div>
+                        </div>
+                     )}
+                     {user && (
+                        <div className="flex items-center justify-between">
+                           <div className="text-slate-500 truncate max-w-[160px]">{user.email}</div>
+                           <button
+                              onClick={() => {
+                                 handleLogout()
+                                 closeSidebar()
+                              }}
+                              className="inline-flex items-center gap-1 text-[11px] text-slate-500 hover:text-red-500"
+                           >
+                              <LogOut size={14} />
+                              <span>Выйти</span>
+                           </button>
+                        </div>
+                     )}
+                  </div>
+               </aside>
+            </>
+         )}
+
+         {/* MAIN AREA (авторизованный) */}
+         <div className="flex-1 flex flex-col min-w-0">
+            {/* TOP BAR */}
+            <header className="h-14 px-4 flex items-center justify-between border-b border-slate-200 bg-white/90 backdrop-blur">
+               <div className="flex items-center gap-3 min-w-0">
+                  {/* burger only on mobile */}
+                  <button
+                     type="button"
+                     className="md:hidden inline-flex items-center justify-center w-9 h-9 rounded-md border border-slate-200 bg-white shadow-sm hover:bg-slate-50"
+                     onClick={() => setSidebarOpen(true)}
+                  >
+                     <span className="sr-only">Открыть меню</span>
+                     <span className="flex flex-col gap-1">
+                        <span className="block w-4 h-[2px] bg-slate-700 rounded" />
+                        <span className="block w-4 h-[2px] bg-slate-700 rounded" />
+                        <span className="block w-4 h-[2px] bg-slate-700 rounded" />
+                     </span>
+                  </button>
+
+                  <div className="flex flex-col">
+                     <span className="text-sm font-semibold text-slate-800 truncate">B2B Online Booking Tool</span>
+                     <span className="text-[11px] text-slate-500 truncate">Управление командировками и закрывающими документами</span>
+                  </div>
+               </div>
+
+               <div className="hidden md:flex items-center gap-4 text-xs">
+                  <NotificationCenter />
+
+                  {company && (
+                     <div className="flex flex-col items-end">
+                        <div className="flex items-center gap-2">
+                           <span className="text-slate-500">Тариф:</span>
+                           <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-800">{company.tariff}</span>
+                        </div>
+                        <div className="text-slate-500">
+                           Баланс: <span className="font-semibold">{company.balance.toLocaleString()} ₸</span>
+                        </div>
+                     </div>
+                  )}
+                  {user && (
+                     <div className="flex flex-col items-end">
+                        <span className="text-slate-700 text-xs">{user.email}</span>
+                        <button onClick={handleLogout} className="inline-flex items-center gap-1 text-[11px] text-slate-500 hover:text-red-500">
+                           <LogOut size={14} />
+                           <span>Выйти</span>
+                        </button>
+                     </div>
+                  )}
+               </div>
+            </header>
+            <main className="flex-1 p-4 md:p-6 overflow-auto">{children}</main>{' '}
+         </div>
       </div>
-    </div>
-  )
+   )
+}
+
+type NavItemProps = {
+   to: string
+   icon: React.ComponentType<{ size?: number; className?: string }>
+   label: string
+}
+
+function NavItem({ to, icon: Icon, label }: NavItemProps) {
+   return (
+      <NavLink
+         to={to}
+         className={({ isActive }) =>
+            [
+               'flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer',
+               'transition-colors text-xs',
+               isActive ? 'bg-brand-50 text-brand-700 font-semibold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
+            ].join(' ')
+         }
+      >
+         <Icon size={16} className="shrink-0" />
+         <span className="truncate">{label}</span>
+      </NavLink>
+   )
 }

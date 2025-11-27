@@ -1,13 +1,7 @@
-import React, { useMemo, useState } from 'react'
+import React, {useMemo, useState} from 'react'
 import SectionHeader from '../components/SectionHeader'
-import { Trip, useStore } from '../state/store'
-import {
-    Filter,
-    TrendingUp,
-    FileDown,
-    Plane,
-    ShoppingCart,
-} from 'lucide-react'
+import {Trip, useStore} from '../state/store'
+import {FileDown, Filter, Plane, ShoppingCart, TrendingUp,} from 'lucide-react'
 
 type StatusFilter = 'ALL' | 'COMPLETED' | 'IN_PROGRESS'  | 'CANCELLED'
 type TypeFilter = 'ALL' | 'single' | 'basket'
@@ -30,7 +24,7 @@ export default function ReportsPage() {
             id: 'T2',
             title: 'Almaty → Astana + hotel',
             total: 210000,
-            type: 'basket',
+            type: 'single',
             status: 'IN_PROGRESS',
             createdAt: '2025-11-12T11:00:00.000Z',
             employeeId: 'E2',
@@ -48,7 +42,7 @@ export default function ReportsPage() {
             id: 'T5',
             title: 'Almaty → Istanbul (Flex)',
             total: 380000,
-            type: 'basket',
+            type: 'single',
             status: 'COMPLETED',
             createdAt: '2025-10-25T10:00:00.000Z',
             employeeId: 'E2',

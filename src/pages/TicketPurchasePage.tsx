@@ -2,273 +2,639 @@ import React, { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import SectionHeader from '../components/SectionHeader'
 import { useStore } from '../state/store'
-import PolicyBadge from '../components/PolicyBadge'
+import {
+    ArrowLeft,
+    AlertTriangle,
+    CheckCircle2,
+    Loader2,
+    User,
+    Users,
+    Plus,
+    Trash2,
+    CreditCard,
+    Building2,
+    FileText,
+} from 'lucide-react'
+
+type PassengerKind = 'EMPLOYEE' | 'GUEST'
+
+type PassengerEmployee = {
+    id: string
+    kind: 'EMPLOYEE'
+    employeeId: string
+}
+
+type PassengerGuest = {
+    id: string
+    kind: 'GUEST'
+    fullName: string
+    relation: string
+    docNumber: string
+    docExpiration: string
+}
+
+type Passenger = PassengerEmployee | PassengerGuest
+
+type PaymentMethod = 'COMPANY_BALANCE' | 'CORP_CARD' | 'POSTPAY' | 'PERSONAL_CARD'
+
+type PurchaseStatus = 'IDLE' | 'PROCESSING' | 'DONE'
 
 export default function TicketPurchasePage() {
     const nav = useNavigate()
     const {
         company,
         selectedFlight,
-        addTrip,
-        hasPermission,
         employees,
         getEmployeeById,
         employeeHasValidDocs,
+        travelPolicy,
+        addTrip,
     } = useStore()
 
-    const canBuy = hasPermission('BUY')
-
-    const [paymentMethod, setPaymentMethod] = useState<'balance' | 'corp' | 'postpay' | 'personal'>('balance')
-    const [approved, setApproved] = useState(false)
-    const [employeeId, setEmployeeId] = useState<string>(employees[0]?.id || '')
-
-    const [isPaying, setIsPaying] = useState(false)
-    const [paidTripId, setPaidTripId] = useState<string | null>(null)
-
-    if (!company || !selectedFlight) {
+    if (!company) {
         return (
             <div className="space-y-4">
-                <SectionHeader title="Ticket purchase" subtitle="No selected flight in demo" />
-                <button className="btn-primary" onClick={() => nav('/search')}>Back to search</button>
+                <SectionHeader
+                    title="Checkout"
+                    subtitle="Company context is missing. Please log in again."
+                />
+                <div className="card p-4 text-sm text-red-600">
+                    Company is not available in current session.
+                </div>
             </div>
         )
     }
 
-    const needsApproval = selectedFlight.policy === 'BLOCK'
-    const serviceFeePct = company.tariff === 'POSTPAY' ? 0.07 : company.tariff === 'FLEX' ? 0.04 : 0
-    const serviceFee = Math.round(selectedFlight.price * serviceFeePct)
-    const total = selectedFlight.price + serviceFee
+    if (!selectedFlight) {
+        return (
+            <div className="space-y-4">
+                <SectionHeader
+                    title="Checkout"
+                    subtitle="You need to select a flight before purchasing."
+                />
+                <div className="card p-4 text-sm flex items-center justify-between">
+                    <span>No flight selected.</span>
+                    <button
+                        className="btn-primary flex items-center gap-1 text-xs"
+                        onClick={() => nav('/search')}
+                    >
+                        <ArrowLeft size={14} />
+                        Back to search
+                    </button>
+                </div>
+            </div>
+        )
+    }
 
-    const employee = getEmployeeById(employeeId)
-    const hasDocs = employeeId ? employeeHasValidDocs(employeeId) : false
+    // -------- HELPERS --------
 
-    const canPayNow = canBuy && !!employeeId && hasDocs && (!needsApproval || approved)
+    const timeToMinutes = (hhmm: string): number => {
+        const [h, m] = hhmm.split(':').map(Number)
+        if (Number.isNaN(h) || Number.isNaN(m)) return 0
+        return h * 60 + m
+    }
 
-    const docsSummary = useMemo(() => {
-        if (!employee) return []
-        return employee.documents.map(d => ({
-            ...d,
-            label:
-                d.type === 'PASSPORT' ? 'Passport' :
-                    d.type === 'ID_CARD' ? 'ID card' :
-                        'Visa',
-        }))
-    }, [employee])
+    const flightPolicy: 'OK' | 'WARN' | 'BLOCK' = useMemo(() => {
+        const { softLimit, blockLimit, preferredFrom, preferredTo } = travelPolicy
+        const price = selectedFlight.price
+        let result: 'OK' | 'WARN' | 'BLOCK' = 'OK'
 
-    const onPay = () => {
-        if (!canPayNow || isPaying) return
+        if (price > blockLimit) {
+            result = 'BLOCK'
+        } else if (price >= softLimit) {
+            result = 'WARN'
+        }
 
-        setIsPaying(true)
+        const depMinutes = timeToMinutes(selectedFlight.depart)
+        const fromMinutes = timeToMinutes(preferredFrom)
+        const toMinutes = timeToMinutes(preferredTo)
 
-        // имитация оплаты
+        if (result !== 'BLOCK') {
+            if (depMinutes < fromMinutes || depMinutes > toMinutes) {
+                if (result === 'OK') result = 'WARN'
+            }
+        }
+
+        return result
+    }, [selectedFlight, travelPolicy])
+
+    const flightPolicyLabel =
+        flightPolicy === 'OK'
+            ? 'Within company policy'
+            : flightPolicy === 'WARN'
+                ? 'Allowed with warning'
+                : 'Blocked by policy'
+
+    const flightPolicyBadgeClass =
+        flightPolicy === 'OK'
+            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+            : flightPolicy === 'WARN'
+                ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                : 'bg-red-50 text-red-700 border border-red-200'
+
+    // -------- PASSENGERS --------
+
+    const defaultEmployee =
+        employees.find(e => e.email === company?.tariff && false) || // просто заглушка, по сути всегда false
+        employees[0]
+
+    const [passengers, setPassengers] = useState<Passenger[]>(
+        defaultEmployee
+            ? [
+                {
+                    id: crypto.randomUUID(),
+                    kind: 'EMPLOYEE',
+                    employeeId: defaultEmployee.id,
+                },
+            ]
+            : []
+    )
+
+    const [employeeToAdd, setEmployeeToAdd] = useState<string>(
+        defaultEmployee ? defaultEmployee.id : employees[0]?.id || ''
+    )
+
+    const [guestFullName, setGuestFullName] = useState('')
+    const [guestRelation, setGuestRelation] = useState('')
+    const [guestDocNumber, setGuestDocNumber] = useState('')
+    const [guestDocExpiration, setGuestDocExpiration] = useState('')
+
+    const addEmployeePassenger = () => {
+        if (!employeeToAdd) return
+        setPassengers(prev => [
+            ...prev,
+            { id: crypto.randomUUID(), kind: 'EMPLOYEE', employeeId: employeeToAdd },
+        ])
+    }
+
+    const addGuestPassenger = () => {
+        if (!guestFullName.trim()) return
+        setPassengers(prev => [
+            ...prev,
+            {
+                id: crypto.randomUUID(),
+                kind: 'GUEST',
+                fullName: guestFullName.trim(),
+                relation: guestRelation.trim() || 'Family',
+                docNumber: guestDocNumber.trim(),
+                docExpiration: guestDocExpiration.trim(),
+            },
+        ])
+        setGuestFullName('')
+        setGuestRelation('')
+        setGuestDocNumber('')
+        setGuestDocExpiration('')
+    }
+
+    const removePassenger = (id: string) => {
+        setPassengers(prev => prev.filter(p => p.id !== id))
+    }
+
+    const passengersCount = passengers.length
+
+    const firstEmployeePassenger = passengers.find(
+        p => p.kind === 'EMPLOYEE'
+    ) as PassengerEmployee | undefined
+
+    // -------- PAYMENT METHOD --------
+
+    const allowedPaymentMethods: PaymentMethod[] = useMemo(() => {
+        switch (company.tariff) {
+            case 'FREE':
+                return ['PERSONAL_CARD', 'COMPANY_BALANCE', 'CORP_CARD']
+            case 'POSTPAY':
+                return ['COMPANY_BALANCE', 'POSTPAY', 'CORP_CARD']
+            case 'FLEX':
+            default:
+                return ['COMPANY_BALANCE', 'POSTPAY', 'CORP_CARD', 'PERSONAL_CARD']
+        }
+    }, [company.tariff])
+
+    const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
+        allowedPaymentMethods[0]
+    )
+
+    const paymentLabel = (m: PaymentMethod): string => {
+        switch (m) {
+            case 'COMPANY_BALANCE':
+                return 'Company balance'
+            case 'CORP_CARD':
+                return 'Corporate card'
+            case 'POSTPAY':
+                return 'Postpay (invoice)'
+            case 'PERSONAL_CARD':
+                return 'Personal card'
+        }
+    }
+
+    const closingDocsAvailable =
+        paymentMethod === 'PERSONAL_CARD' ? false : true
+
+    // -------- PURCHASE SIMULATION --------
+
+    const [purchaseStatus, setPurchaseStatus] = useState<PurchaseStatus>('IDLE')
+
+    const totalAmount = useMemo(
+        () => selectedFlight.price * Math.max(passengersCount, 1),
+        [selectedFlight.price, passengersCount]
+    )
+
+    const canPurchase =
+        passengersCount > 0 &&
+        flightPolicy !== 'BLOCK' &&
+        purchaseStatus !== 'PROCESSING'
+
+    const handlePurchase = () => {
+        if (!canPurchase) return
+
+        setPurchaseStatus('PROCESSING')
+
+        // имитация async-операции
         setTimeout(() => {
-            const tripId = crypto.randomUUID()
-
+            // создаём Trip в store
             addTrip({
-                id: tripId, // store игнорит id, но нам нужен для редиректа — поэтому ниже используем paidTripId
-                title: `Trip ${selectedFlight.from}-${selectedFlight.to}`,
-                total,
+                title: `${selectedFlight.from} → ${selectedFlight.to} • ${passengersCount} pax`,
+                total: totalAmount,
+                // @ts-ignore
                 type: 'single',
-                status:  'COMPLETED',
-                employeeId,
-            } as any)
+                status: 'COMPLETED',
+                employeeId: firstEmployeePassenger?.employeeId,
+            })
 
-            setPaidTripId(tripId)
-            setIsPaying(false)
-
-            nav(`/documents?last=${tripId}`)
+            setPurchaseStatus('DONE')
         }, 1200)
     }
 
-    return (
-        <div className="space-y-5">
-            <SectionHeader title="Ticket purchase" subtitle="Single booking flow with employee selection" />
+    const handleDownloadTickets = () => {
+        alert('Simulated: download tickets PDF for all passengers.')
+    }
 
-            {/* Selected flight */}
-            <div className="card p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                    <div className="font-medium">
+    const handleDownloadAllDocs = () => {
+        if (!closingDocsAvailable) {
+            alert('Closing documents are not available for personal card payments.')
+            return
+        }
+        alert(
+            'Simulated: download all documents (tickets + invoice + act) as ZIP/PDF package.'
+        )
+    }
+
+    // -------- RENDER --------
+
+    return (
+        <div className="space-y-6">
+            <SectionHeader
+                title="Checkout"
+                subtitle="Select passengers, payment method and confirm purchase."
+            />
+
+            <button
+                className="text-xs text-slate-500 flex items-center gap-1 mb-2"
+                onClick={() => nav(-1)}
+            >
+                <ArrowLeft size={14} />
+                Back
+            </button>
+
+            {/* 1. FLIGHT SUMMARY + POLICY */}
+            <div className="card p-4 grid md:grid-cols-3 gap-4 text-sm">
+                <div className="space-y-1">
+                    <div className="text-xs text-slate-500">Selected flight</div>
+                    <div className="font-semibold">
                         {selectedFlight.from} → {selectedFlight.to}
                     </div>
-                    <PolicyBadge level={selectedFlight.policy} />
+                    <div className="text-xs text-slate-600">
+                        {selectedFlight.date} • {selectedFlight.depart} – {selectedFlight.arrive}
+                    </div>
+                    <div className="text-xs text-slate-600">
+                        Carrier: {selectedFlight.carrier}
+                    </div>
                 </div>
-                <div className="text-sm text-slate-600">
-                    {selectedFlight.date} · {selectedFlight.depart}–{selectedFlight.arrive} · {selectedFlight.carrier}
+                <div className="space-y-1 text-xs text-slate-600">
+                    <div className="font-semibold text-[11px]">Price & policy</div>
+                    <div>
+                        Base price:{' '}
+                        <span className="font-medium">
+              {selectedFlight.price.toLocaleString('ru-RU')} KZT
+            </span>
+                    </div>
+                    <div>
+                        Total for {Math.max(passengersCount, 1)} pax:{' '}
+                        <span className="font-medium">
+              {totalAmount.toLocaleString('ru-RU')} KZT
+            </span>
+                    </div>
+                    <div className="mt-1 flex items-center gap-2">
+            <span className={`px-2 py-0.5 rounded-full text-[11px] ${flightPolicyBadgeClass}`}>
+              {flightPolicy}
+            </span>
+                        <span className="text-[11px] text-slate-600">{flightPolicyLabel}</span>
+                    </div>
                 </div>
-                <div className="text-sm">
-                    Price: <b>{selectedFlight.price.toLocaleString()} ₸</b>
+                <div className="text-xs text-slate-500 flex items-start gap-2">
+                    <AlertTriangle size={14} className="mt-[2px] text-slate-400" />
+                    <span>
+            Policy thresholds are configured by admin in Company Settings. If flight is BLOCK, you
+            cannot complete purchase in this prototype.
+          </span>
                 </div>
             </div>
 
-            {/* Employee selection */}
-            <div className="card p-4 space-y-3">
-                <div className="text-sm font-medium">Booked for employee</div>
+            {/* 2. PASSENGERS BLOCK */}
+            <div className="card p-4 space-y-4 text-sm">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <Users size={16} className="text-slate-600" />
+                        <span className="font-semibold text-sm">Passengers</span>
+                    </div>
+                    <div className="text-xs text-slate-500">
+                        Multi-passenger booking for employees and their family members.
+                    </div>
+                </div>
 
-                <select
-                    className="select"
-                    value={employeeId}
-                    onChange={e => setEmployeeId(e.target.value)}
-                    disabled={isPaying}
-                >
-                    {employees.map(e => (
-                        <option key={e.id} value={e.id}>
-                            {e.name} · {e.department || '—'}
-                        </option>
-                    ))}
-                </select>
-
-                {employee && (
-                    <div className="rounded-xl border border-slate-100 p-3 space-y-2">
-                        <div className="text-xs text-slate-500">Documents for {employee.name}</div>
-
-                        {docsSummary.length === 0 && (
-                            <div className="text-sm text-amber-800 bg-amber-50/40 border border-amber-200 rounded-lg p-2">
-                                No documents. Booking is blocked in demo.
-                            </div>
-                        )}
-
-                        {docsSummary.length > 0 && (
-                            <div className="space-y-1">
-                                {docsSummary.map(d => (
-                                    <div key={d.type} className="flex items-center justify-between text-sm border-t border-slate-100 pt-1">
-                                        <div>
-                                            {d.label}: {d.number}
-                                            <span className="text-xs text-slate-500 ml-2">exp {d.expirationDate}</span>
-                                        </div>
-                                        <div className={`text-xs px-2 py-0.5 rounded-full ${
-                                            d.status === 'VALID'
-                                                ? 'bg-emerald-50 text-emerald-700'
-                                                : d.status === 'EXPIRED'
-                                                    ? 'bg-rose-50 text-rose-700'
-                                                    : 'bg-slate-50 text-slate-500'
-                                        }`}>
-                                            {d.status}
-                                        </div>
-                                    </div>
+                {/* 2.1 Add employee passenger */}
+                <div className="grid md:grid-cols-2 gap-4 text-xs">
+                    <div className="space-y-2">
+                        <div className="font-semibold text-[11px]">Add employee</div>
+                        <div className="flex gap-2">
+                            <select
+                                className="select h-8 text-xs flex-1"
+                                value={employeeToAdd}
+                                onChange={e => setEmployeeToAdd(e.target.value)}
+                            >
+                                {employees.map(e => (
+                                    <option key={e.id} value={e.id}>
+                                        {e.name} ({e.email})
+                                    </option>
                                 ))}
-                            </div>
-                        )}
-
-                        {!hasDocs && (
-                            <div className="text-xs text-rose-700 mt-1">
-                                At least one valid Passport or ID card is required.
-                            </div>
-                        )}
-
-                        <div className="text-xs text-slate-500">
-                            Manage documents in Employees page (mock).
+                            </select>
+                            <button
+                                className="btn-primary h-8 px-3 flex items-center gap-1 text-[11px]"
+                                type="button"
+                                onClick={addEmployeePassenger}
+                                disabled={!employeeToAdd}
+                            >
+                                <Plus size={12} />
+                                Add
+                            </button>
+                        </div>
+                        <div className="text-[11px] text-slate-500">
+                            Employee documents are taken from employee profile (passports/ID).
                         </div>
                     </div>
-                )}
-            </div>
 
-            {/* Fees */}
-            <div className="card p-4 space-y-2">
-                <div className="text-sm font-medium">Fees</div>
-                <div className="flex justify-between text-sm">
-                    <span>Base price</span>
-                    <span>{selectedFlight.price.toLocaleString()} ₸</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                    <span>Service fee ({Math.round(serviceFeePct * 100)}%)</span>
-                    <span>{serviceFee.toLocaleString()} ₸</span>
-                </div>
-                <div className="flex justify-between text-sm font-semibold border-t border-slate-100 pt-2">
-                    <span>Total</span>
-                    <span>{total.toLocaleString()} ₸</span>
-                </div>
-            </div>
-
-            {/* Payment */}
-            <div className="card p-4 space-y-3">
-                <div className="text-sm font-medium">Payment</div>
-
-                <label className="flex items-center gap-2 text-sm">
-                    <input
-                        type="radio"
-                        name="pm"
-                        checked={paymentMethod === 'balance'}
-                        onChange={() => setPaymentMethod('balance')}
-                        disabled={isPaying}
-                    />
-                    Company balance (docs available)
-                </label>
-
-                <label className="flex items-center gap-2 text-sm">
-                    <input
-                        type="radio"
-                        name="pm"
-                        checked={paymentMethod === 'corp'}
-                        onChange={() => setPaymentMethod('corp')}
-                        disabled={isPaying}
-                    />
-                    Corporate card (docs available)
-                </label>
-
-                {company.tariff !== 'FREE' && (
-                    <label className="flex items-center gap-2 text-sm">
-                        <input
-                            type="radio"
-                            name="pm"
-                            checked={paymentMethod === 'postpay'}
-                            onChange={() => setPaymentMethod('postpay')}
-                            disabled={isPaying}
-                        />
-                        Postpay (due in {company.postpayDueDays} days)
-                    </label>
-                )}
-
-                <label className="flex items-center gap-2 text-sm">
-                    <input
-                        type="radio"
-                        name="pm"
-                        checked={paymentMethod === 'personal'}
-                        onChange={() => setPaymentMethod('personal')}
-                        disabled={isPaying}
-                    />
-                    Personal card (no closing docs)
-                </label>
-
-                {!canBuy && (
-                    <div className="text-xs text-rose-700">
-                        Your role is Viewer. Buying is disabled.
+                    {/* 2.2 Add guest passenger */}
+                    <div className="space-y-2">
+                        <div className="font-semibold text-[11px]">Add guest (family / non-employee)</div>
+                        <div className="grid grid-cols-2 gap-2">
+                            <input
+                                className="input h-8 text-xs"
+                                placeholder="Full name"
+                                value={guestFullName}
+                                onChange={e => setGuestFullName(e.target.value)}
+                            />
+                            <input
+                                className="input h-8 text-xs"
+                                placeholder="Relation (e.g. Spouse, Child)"
+                                value={guestRelation}
+                                onChange={e => setGuestRelation(e.target.value)}
+                            />
+                            <input
+                                className="input h-8 text-xs"
+                                placeholder="Document number"
+                                value={guestDocNumber}
+                                onChange={e => setGuestDocNumber(e.target.value)}
+                            />
+                            <input
+                                type="date"
+                                className="input h-8 text-xs"
+                                placeholder="Expiration"
+                                value={guestDocExpiration}
+                                onChange={e => setGuestDocExpiration(e.target.value)}
+                            />
+                        </div>
+                        <div className="flex justify-end">
+                            <button
+                                className="btn-primary h-8 px-3 flex items-center gap-1 text-[11px]"
+                                type="button"
+                                onClick={addGuestPassenger}
+                                disabled={!guestFullName.trim()}
+                            >
+                                <Plus size={12} />
+                                Add guest
+                            </button>
+                        </div>
                     </div>
-                )}
-            </div>
+                </div>
 
-            {/* Approval */}
-            {needsApproval && (
-                <div className="card p-4 space-y-2 border-amber-200 bg-amber-50/30">
-                    <div className="text-sm font-medium">Out of policy</div>
-                    <div className="text-sm text-slate-600">
-                        This option exceeds policy. Approval is required.
+                {/* 2.3 List of passengers */}
+                <div className="border-t border-slate-100 pt-3 mt-1 space-y-2 text-xs">
+                    <div className="font-semibold text-[11px] mb-1">
+                        {passengersCount === 0 ? 'No passengers added yet' : 'Passengers list'}
                     </div>
-                    <button className="btn-primary" disabled={isPaying} onClick={() => setApproved(true)}>
-                        Approve (mock)
-                    </button>
+                    {passengersCount > 0 && (
+                        <div className="space-y-2">
+                            {passengers.map(p => {
+                                if (p.kind === 'EMPLOYEE') {
+                                    const emp = getEmployeeById(p.employeeId)
+                                    const hasDocs = employeeHasValidDocs(p.employeeId)
+                                    return (
+                                        <div
+                                            key={p.id}
+                                            className="flex items-start justify-between px-2 py-2 rounded border border-slate-200 bg-slate-50"
+                                        >
+                                            <div className="flex items-start gap-2">
+                                                <User size={14} className="mt-0.5 text-slate-500" />
+                                                <div>
+                                                    <div className="font-medium text-[13px]">
+                                                        {emp?.name || 'Unknown employee'}
+                                                    </div>
+                                                    <div className="text-[11px] text-slate-500">
+                                                        {emp?.email} • {emp?.department || 'No department'}
+                                                    </div>
+                                                    <div className="flex items-center gap-2 mt-1 text-[11px]">
+                            <span
+                                className={`px-1.5 py-0.5 rounded-full border text-[10px] ${
+                                    hasDocs
+                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                        : 'bg-red-50 text-red-700 border-red-200'
+                                }`}
+                            >
+                              {hasDocs ? 'Docs OK' : 'Docs missing/expired'}
+                            </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <button
+                                                className="btn-ghost h-7 px-2 text-[11px] text-slate-500 flex items-center gap-1"
+                                                onClick={() => removePassenger(p.id)}
+                                            >
+                                                <Trash2 size={12} />
+                                                Remove
+                                            </button>
+                                        </div>
+                                    )
+                                } else {
+                                    return (
+                                        <div
+                                            key={p.id}
+                                            className="flex items-start justify-between px-2 py-2 rounded border border-slate-200 bg-white"
+                                        >
+                                            <div className="flex items-start gap-2">
+                                                <User size={14} className="mt-0.5 text-slate-500" />
+                                                <div>
+                                                    <div className="font-medium text-[13px]">{p.fullName}</div>
+                                                    <div className="text-[11px] text-slate-500">
+                                                        Guest • {p.relation || 'Family/Other'}
+                                                    </div>
+                                                    <div className="text-[11px] text-slate-500 mt-1">
+                                                        Doc: {p.docNumber || '—'}
+                                                        {p.docExpiration && ` • exp: ${p.docExpiration}`}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <button
+                                                className="btn-ghost h-7 px-2 text-[11px] text-slate-500 flex items-center gap-1"
+                                                onClick={() => removePassenger(p.id)}
+                                            >
+                                                <Trash2 size={12} />
+                                                Remove
+                                            </button>
+                                        </div>
+                                    )
+                                }
+                            })}
+                        </div>
+                    )}
                 </div>
-            )}
-
-            {/* Pay */}
-            <div className="flex items-center justify-end gap-2">
-                <button className="btn-ghost" disabled={isPaying} onClick={() => nav(-1)}>Back</button>
-                <button className="btn-primary" disabled={!canPayNow || isPaying} onClick={onPay}>
-                    {isPaying ? 'Processing payment…' : 'Pay & issue docs'}
-                </button>
             </div>
 
-            {isPaying && (
-                <div className="card p-4 text-sm text-slate-600 flex items-center gap-2">
-                    <div className="h-4 w-4 rounded-full border-2 border-slate-300 border-t-transparent animate-spin" />
-                    Payment is processing. Please wait.
+            {/* 3. PAYMENT & SUMMARY */}
+            <div className="card p-4 grid md:grid-cols-3 gap-4 text-sm">
+                {/* 3.1 Payment methods */}
+                <div className="md:col-span-2 space-y-3">
+                    <div className="flex items-center gap-2">
+                        <CreditCard size={16} className="text-slate-600" />
+                        <span className="font-semibold text-sm">Payment method</span>
+                    </div>
+                    <div className="space-y-2 text-xs">
+                        {allowedPaymentMethods.map(m => (
+                            <label
+                                key={m}
+                                className="flex items-start gap-2 p-2 rounded border border-slate-200 hover:bg-slate-50 cursor-pointer"
+                            >
+                                <input
+                                    type="radio"
+                                    className="mt-1"
+                                    checked={paymentMethod === m}
+                                    onChange={() => setPaymentMethod(m)}
+                                />
+                                <div>
+                                    <div className="font-semibold text-[11px]">{paymentLabel(m)}</div>
+                                    <div className="text-[11px] text-slate-600">
+                                        {m === 'COMPANY_BALANCE' &&
+                                            'Pay from pre-loaded company balance; closing docs available.'}
+                                        {m === 'CORP_CARD' &&
+                                            'Pay with saved corporate card token; closing docs available.'}
+                                        {m === 'POSTPAY' &&
+                                            'Invoice will be issued and paid later within postpay due period.'}
+                                        {m === 'PERSONAL_CARD' &&
+                                            'Employee pays with personal card; closing docs usually not available.'}
+                                    </div>
+                                </div>
+                            </label>
+                        ))}
+                    </div>
                 </div>
-            )}
 
-            {paidTripId && !isPaying && (
-                <div className="text-xs text-slate-500">
-                    Payment succeeded. Trip #{paidTripId.slice(0, 6)} created.
+                {/* 3.2 Summary & actions */}
+                <div className="border-l border-slate-100 pl-0 md:pl-4 md:ml-4 text-xs flex flex-col justify-between">
+                    <div className="space-y-2">
+                        <div className="font-semibold text-sm flex items-center gap-2">
+                            <Building2 size={16} className="text-slate-600" />
+                            Order summary
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span>Passengers</span>
+                            <span className="font-medium">{passengersCount || 1}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span>Base price</span>
+                            <span>{selectedFlight.price.toLocaleString('ru-RU')} KZT</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span>Tariff</span>
+                            <span className="badge-soft text-[10px] uppercase">
+                {company.tariff}
+              </span>
+                        </div>
+                        <div className="flex items-center justify-between border-t border-slate-200 pt-2 mt-2">
+                            <span className="font-semibold">Total</span>
+                            <span className="font-semibold">
+                {totalAmount.toLocaleString('ru-RU')} KZT
+              </span>
+                        </div>
+                        <div className="mt-2 text-[11px] text-slate-500">
+                            Closing documents:{' '}
+                            <strong>{closingDocsAvailable ? 'will be generated' : 'not available'}</strong>{' '}
+                            ({paymentLabel(paymentMethod)}).
+                        </div>
+                        {flightPolicy === 'BLOCK' && (
+                            <div className="mt-2 text-[11px] text-red-600 flex items-start gap-1">
+                                <AlertTriangle size={12} className="mt-[2px]" />
+                                <span>
+                  This flight is blocked by travel policy. In this prototype purchase is disabled
+                  for BLOCK options.
+                </span>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="mt-4 flex flex-col gap-2">
+                        <button
+                            className="btn-primary w-full flex items-center justify-center gap-2 text-xs disabled:opacity-60"
+                            disabled={!canPurchase}
+                            onClick={handlePurchase}
+                        >
+                            {purchaseStatus === 'PROCESSING' ? (
+                                <>
+                                    <Loader2 size={14} className="animate-spin" />
+                                    Issuing tickets…
+                                </>
+                            ) : (
+                                'Confirm purchase'
+                            )}
+                        </button>
+                        {purchaseStatus === 'DONE' && (
+                            <div className="mt-2 p-2 rounded border border-emerald-200 bg-emerald-50 text-[11px] text-emerald-700 flex items-start gap-2">
+                                <CheckCircle2 size={14} className="mt-[2px]" />
+                                <div>
+                                    <div className="font-semibold">Order completed</div>
+                                    <div className="mt-1">
+                                        Tickets are issued in this prototype. You can now simulate document download.
+                                    </div>
+                                    <div className="mt-2 flex flex-wrap gap-2">
+                                        <button
+                                            className="btn-ghost h-7 px-2 text-[11px] flex items-center gap-1"
+                                            onClick={handleDownloadTickets}
+                                        >
+                                            <FileText size={12} />
+                                            Download tickets
+                                        </button>
+                                        <button
+                                            className="btn-ghost h-7 px-2 text-[11px] flex items-center gap-1"
+                                            onClick={handleDownloadAllDocs}
+                                        >
+                                            <FileText size={12} />
+                                            Download all documents
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
-            )}
+            </div>
         </div>
     )
 }

@@ -1,20 +1,19 @@
-import React, { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import React, {useMemo, useState} from 'react'
+import {useNavigate} from 'react-router-dom'
 import SectionHeader from '../components/SectionHeader'
-import { useStore, Trip } from '../state/store'
+import {Trip, useStore} from '../state/store'
 import {
-    Wallet,
-    CreditCard,
-    ShieldCheck,
     AlertTriangle,
-    Plane,
-    ShoppingCart,
+    ArrowRight,
+    Clock,
+    CreditCard,
     FileText,
     LifeBuoy,
-    Users,
-    Clock,
+    Plane,
+    ShieldCheck,
     TrendingUp,
-    ArrowRight,
+    Users,
+    Wallet,
 } from 'lucide-react'
 
 export default function DashboardPage() {
@@ -36,7 +35,7 @@ export default function DashboardPage() {
             id: 'T2',
             title: 'Almaty → Astana + hotel',
             total: 210000,
-            type: 'basket',
+            type: 'single',
             status: 'IN_PROGRESS',
             createdAt: '2025-11-12T11:00:00.000Z',
             employeeId: 'E2',
@@ -54,7 +53,7 @@ export default function DashboardPage() {
             id: 'T5',
             title: 'Almaty → Istanbul (Flex)',
             total: 380000,
-            type: 'basket',
+            type: 'single',
             status: 'COMPLETED',
             createdAt: '2025-10-25T10:00:00.000Z',
             employeeId: 'E2',
@@ -78,11 +77,9 @@ export default function DashboardPage() {
 
         const total = sourceTrips.length
         const flights = sourceTrips.filter(t => t.type === 'single')
-        const baskets = sourceTrips.filter(t => t.type === 'basket')
 
         const allStatus = byStatus(sourceTrips)
         const flightsStatus = byStatus(flights)
-        const basketsStatus = byStatus(baskets)
 
         // Простейшая помесячная агрегация по createdAt
         const monthly: Record<string, number> = {}
@@ -104,7 +101,6 @@ export default function DashboardPage() {
             totalSpend,
             allStatus,
             flightsStatus,
-            basketsStatus,
             monthlyItems,
         }
     }, [sourceTrips])
@@ -394,13 +390,6 @@ export default function DashboardPage() {
                                     analytics.flightsStatus.IN_PROGRESS +
                                     analytics.flightsStatus.CANCELLED,
                             },
-                            {
-                                label: 'Trip baskets',
-                                value:
-                                    analytics.basketsStatus.COMPLETED +
-                                    analytics.basketsStatus.IN_PROGRESS +
-                                    analytics.basketsStatus.CANCELLED,
-                            },
                         ]}
                     />
                 </div>
@@ -568,12 +557,6 @@ export default function DashboardPage() {
                     icon={Plane}
                     onClick={() => nav('/search')}
                     disabled={!canBuy}
-                />
-                <Action
-                    title="Build full trip"
-                    icon={ShoppingCart}
-                    onClick={() => nav('/trip/new')}
-                    disabled={!canBuildTrip}
                 />
                 <Action
                     title="Closing documents"

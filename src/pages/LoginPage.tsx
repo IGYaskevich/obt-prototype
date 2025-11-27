@@ -6,7 +6,7 @@ import { Tariff, useStore } from '../state/store'
 export default function LoginPage() {
   const nav = useNavigate()
   const { login } = useStore()
-  const [email, setEmail] = useState('demo@company.com')
+  const [email, setEmail] = useState('admin@company.com')
   const [code, setCode] = useState('')
   const [step, setStep] = useState<1|2|3>(1)
   const [tariff, setTariff] = useState<Tariff>('FREE')

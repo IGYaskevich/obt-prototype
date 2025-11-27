@@ -28,10 +28,30 @@ export type Permission =
     | 'VIEW_DOCS'
     | 'VIEW_REPORTS'
 
+export type TravelPolicy = {
+    softLimit: number
+    blockLimit: number
+    preferredFrom: string // "HH:MM"
+    preferredTo: string   // "HH:MM"
+    allowedClasses: string[] // ['ECONOMY', 'PREMIUM_ECONOMY', 'BUSINESS']
+    allowConnections: boolean
+    maxConnectionTime: number // minutes
+    handBaggageOnly: boolean
+}
+
 export type User = {
     email: string
     companyName: string
     role: Role
+}
+
+/** Привязанная корпоративная карта компании */
+export type CorporateCard = {
+    brand: string      // Visa Business, MasterCard Corporate и т.п.
+    last4: string      // последние 4 цифры
+    holder: string     // имя/название на карте
+    expiry: string     // YYYY-MM
+    status: 'ACTIVE' | 'BLOCKED'
 }
 
 export type Company = {
@@ -39,6 +59,7 @@ export type Company = {
     postpayLimit: number
     postpayDueDays: number
     tariff: Tariff
+    corporateCard?: CorporateCard
 }
 
 export type Flight = {
@@ -66,8 +87,7 @@ export type BookingStatus = 'COMPLETED' | 'IN_PROGRESS' | 'FLAGGED' | 'CANCELLED
 
 /**
  * Тип бронирования:
- * Исторически был 'single' | 'basket', сейчас оставляем только 'single'
- * как одиночную бронь (даже если внутри есть несколько услуг).
+ * Оставляем только 'single' как одиночную бронь.
  */
 export type BookingType = 'single'
 
@@ -92,15 +112,7 @@ export type EmployeeDocument = {
     status: EmployeeDocumentStatus
 }
 
-/** Corporate cards, привязанные к сотруднику */
-export type EmployeeCard = {
-    id: string
-    provider: string        // Kaspi, Halyk, Visa Corporate...
-    label: string           // "Corporate travel card" и т.п.
-    last4: string           // последние 4 цифры
-    expiration: string      // YYYY-MM
-}
-
+/** Сотрудник: только настройки + документы */
 export type Employee = {
     id: string
     name: string
@@ -108,7 +120,6 @@ export type Employee = {
     role: Role
     department?: string
     documents: EmployeeDocument[]
-    cards: EmployeeCard[]
 }
 
 /* ========== STORE SHAPE ========== */
@@ -128,8 +139,11 @@ type Store = {
     trips: Trip[]
     addTrip: (trip: Omit<Trip, 'id' | 'createdAt' | 'type'>) => void
 
+    travelPolicy: TravelPolicy
+    updateTravelPolicy: (patch: Partial<TravelPolicy>) => void
+
     employees: Employee[]
-    addEmployee: (e: Omit<Employee, 'id' | 'documents' | 'cards'>) => void
+    addEmployee: (e: Omit<Employee, 'id' | 'documents'>) => void
     updateEmployeeRole: (id: string, role: Role) => void
     removeEmployee: (id: string) => void
 
@@ -137,9 +151,8 @@ type Store = {
     addEmployeeDocument: (employeeId: string, doc: Omit<EmployeeDocument, 'status'>) => void
     removeEmployeeDocument: (employeeId: string, docNumber: string) => void
 
-    /** Корпоративные карты сотрудника */
-    addEmployeeCard: (employeeId: string, card: Omit<EmployeeCard, 'id'>) => void
-    removeEmployeeCard: (employeeId: string, cardId: string) => void
+    /** Корпоративная карта компании */
+    updateCorporateCard: (card: CorporateCard | null) => void
 
     hasPermission: (p: Permission) => boolean
 
@@ -239,15 +252,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
                 { type: 'PASSPORT', number: 'N1234567', expirationDate: '2028-05-10', status: 'VALID' },
                 { type: 'ID_CARD', number: 'ID998877', expirationDate: '2030-01-01', status: 'VALID' },
             ],
-            cards: [
-                {
-                    id: 'C1',
-                    provider: 'Kaspi',
-                    label: 'Corporate travel card',
-                    last4: '1234',
-                    expiration: '2027-08',
-                },
-            ],
         },
         {
             id: 'E2',
@@ -258,7 +262,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             documents: [
                 { type: 'PASSPORT', number: 'K7654321', expirationDate: '2026-11-01', status: 'VALID' },
             ],
-            cards: [],
         },
     ])
 
@@ -286,6 +289,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             postpayLimit: 1500000,
             postpayDueDays: 14,
             tariff,
+            corporateCard: undefined, // в реальном продукте появится после первичной регистрации
         })
     }
 
@@ -305,13 +309,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
     /* ----- Employees ----- */
 
-    const addEmployee = (e: Omit<Employee, 'id' | 'documents' | 'cards'>) =>
+    const addEmployee = (e: Omit<Employee, 'id' | 'documents'>) =>
         setEmployees(prev => [
             {
                 ...e,
                 id: crypto.randomUUID(),
                 documents: [],
-                cards: [],
             },
             ...prev,
         ])
@@ -354,35 +357,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         )
     }
 
-    const addEmployeeCard = (employeeId: string, card: Omit<EmployeeCard, 'id'>) => {
-        setEmployees(prev =>
-            prev.map(emp =>
-                emp.id === employeeId
-                    ? {
-                        ...emp,
-                        cards: [
-                            ...emp.cards,
-                            {
-                                ...card,
-                                id: crypto.randomUUID(),
-                            },
-                        ],
-                    }
-                    : emp
-            )
-        )
-    }
+    /* ----- Corporate card (company-level) ----- */
 
-    const removeEmployeeCard = (employeeId: string, cardId: string) => {
-        setEmployees(prev =>
-            prev.map(emp =>
-                emp.id === employeeId
-                    ? {
-                        ...emp,
-                        cards: emp.cards.filter(c => c.id !== cardId),
-                    }
-                    : emp
-            )
+    const updateCorporateCard = (card: CorporateCard | null) => {
+        setCompany(c =>
+            c
+                ? {
+                    ...c,
+                    corporateCard: card ?? undefined,
+                }
+                : c
         )
     }
 
@@ -393,7 +377,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         const r = user.role
 
         if (r === 'ADMIN') {
-            // Админ может всё
             return true
         }
 
@@ -420,6 +403,21 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         )
     }
 
+
+    const [travelPolicy, setTravelPolicy] = useState<TravelPolicy>({
+        softLimit: 80000,
+        blockLimit: 120000,
+        preferredFrom: '07:00',
+        preferredTo: '21:00',
+        allowedClasses: ['ECONOMY'],
+        allowConnections: true,
+        maxConnectionTime: 180,
+        handBaggageOnly: false,
+    })
+
+    const updateTravelPolicy = (patch: Partial<TravelPolicy>) => {
+        setTravelPolicy(prev => ({ ...prev, ...patch }))
+    }
     /* ----- Memoized value ----- */
 
     const value = useMemo<Store>(
@@ -445,13 +443,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             addEmployeeDocument,
             removeEmployeeDocument,
 
-            addEmployeeCard,
-            removeEmployeeCard,
+            updateCorporateCard,
 
             hasPermission,
 
             getEmployeeById,
             employeeHasValidDocs,
+
+            travelPolicy,
+            updateTravelPolicy,
         }),
         [user, company, selectedFlight, trips, employees]
     )

@@ -4,6 +4,7 @@ import SectionHeader from '../components/SectionHeader'
 import {
     useStore,
     EmployeeDocumentType,
+    Role,
 } from '../state/store'
 import {
     ArrowLeft,
@@ -11,7 +12,6 @@ import {
     CheckCircle2,
     Plus,
     Trash2,
-    CreditCard,
 } from 'lucide-react'
 
 export default function EmployeeProfilePage() {
@@ -22,8 +22,6 @@ export default function EmployeeProfilePage() {
         updateEmployeeRole,
         addEmployeeDocument,
         removeEmployeeDocument,
-        addEmployeeCard,
-        removeEmployeeCard,
         employeeHasValidDocs,
     } = useStore()
 
@@ -33,11 +31,6 @@ export default function EmployeeProfilePage() {
     const [docNumber, setDocNumber] = useState('')
     const [docExp, setDocExp] = useState('')
     const [docCountry, setDocCountry] = useState('')
-
-    const [cardProvider, setCardProvider] = useState('Kaspi')
-    const [cardLabel, setCardLabel] = useState('Corporate travel card')
-    const [cardLast4, setCardLast4] = useState('')
-    const [cardExp, setCardExp] = useState('2027-08')
 
     const canTravel = employee && employeeHasValidDocs(employee.id)
 
@@ -74,20 +67,6 @@ export default function EmployeeProfilePage() {
         setDocCountry('')
     }
 
-    const handleAddCard = () => {
-        if (!cardLast4.trim() || cardLast4.trim().length !== 4) {
-            alert('Enter last 4 digits of card')
-            return
-        }
-        addEmployeeCard(employee.id, {
-            provider: cardProvider,
-            label: cardLabel.trim() || 'Corporate card',
-            last4: cardLast4.trim(),
-            expiration: cardExp,
-        })
-        setCardLast4('')
-    }
-
     return (
         <div className="space-y-6">
             <button className="btn-ghost text-xs flex items-center gap-1" onClick={() => nav('/employees')}>
@@ -97,10 +76,10 @@ export default function EmployeeProfilePage() {
 
             <SectionHeader
                 title={employee.name}
-                subtitle={`Profile, documents and cards for business travel`}
+                subtitle="Employee profile and travel documents"
             />
 
-            {/* Summary card */}
+            {/* Summary card: настройки сотрудника + статус документов */}
             <div className="card p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4 text-sm">
                 <div>
                     <div className="font-semibold">{employee.name}</div>
@@ -113,11 +92,10 @@ export default function EmployeeProfilePage() {
                         <select
                             className="select h-7 text-xs"
                             value={employee.role}
-                            onChange={e => updateEmployeeRole(employee.id, e.target.value as any)}
+                            onChange={e => updateEmployeeRole(employee.id, e.target.value as Role)}
                         >
                             <option value="ADMIN">Admin</option>
-                            <option value="BOOKER">Booker</option>
-                            <option value="VIEWER">Viewer</option>
+                            <option value="COORDINATOR">Coordinator</option>
                         </select>
                     </div>
                 </div>
@@ -245,98 +223,6 @@ export default function EmployeeProfilePage() {
                     <div className="flex justify-end mt-2">
                         <button className="btn-primary text-xs" onClick={handleAddDoc}>
                             Save document
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {/* Cards */}
-            <div className="card p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                    <h2 className="font-semibold text-sm flex items-center gap-2">
-                        <CreditCard size={14} className="text-slate-500" />
-                        Corporate cards
-                    </h2>
-                    <div className="text-[11px] text-slate-500">
-                        Corporate cards can be used for company-paid tickets or hotel bookings.
-                    </div>
-                </div>
-
-                {employee.cards && employee.cards.length > 0 ? (
-                    <div className="space-y-2 text-xs">
-                        {employee.cards.map(c => (
-                            <div
-                                key={c.id}
-                                className="flex items-center justify-between border border-slate-100 rounded-md px-3 py-2"
-                            >
-                                <div className="flex flex-col">
-                  <span className="font-medium">
-                    {c.label} · {c.provider}
-                  </span>
-                                    <span className="text-[11px] text-slate-500">
-                    **** **** **** {c.last4} · exp {c.expiration}
-                  </span>
-                                </div>
-                                <button
-                                    className="btn-ghost text-xs text-red-600"
-                                    onClick={() => removeEmployeeCard(employee.id, c.id)}
-                                >
-                                    <Trash2 size={12} /> Remove
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="text-xs text-slate-500">
-                        No corporate cards yet.
-                    </div>
-                )}
-
-                {/* Add card form */}
-                <div className="mt-3 border-t border-slate-100 pt-3">
-                    <div className="text-xs font-semibold mb-2 flex items-center gap-1">
-                        <Plus size={12} /> Add corporate card
-                    </div>
-                    <div className="grid md:grid-cols-4 gap-3 text-xs">
-                        <div>
-                            <label className="text-[11px] text-slate-500">Provider</label>
-                            <input
-                                className="input mt-1 h-8"
-                                value={cardProvider}
-                                onChange={e => setCardProvider(e.target.value)}
-                            />
-                        </div>
-                        <div>
-                            <label className="text-[11px] text-slate-500">Label</label>
-                            <input
-                                className="input mt-1 h-8"
-                                value={cardLabel}
-                                onChange={e => setCardLabel(e.target.value)}
-                            />
-                        </div>
-                        <div>
-                            <label className="text-[11px] text-slate-500">Last 4 digits</label>
-                            <input
-                                className="input mt-1 h-8"
-                                value={cardLast4}
-                                maxLength={4}
-                                onChange={e => setCardLast4(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                                placeholder="1234"
-                            />
-                        </div>
-                        <div>
-                            <label className="text-[11px] text-slate-500">Expiration (YYYY-MM)</label>
-                            <input
-                                type="month"
-                                className="input mt-1 h-8"
-                                value={cardExp}
-                                onChange={e => setCardExp(e.target.value)}
-                            />
-                        </div>
-                    </div>
-                    <div className="flex justify-end mt-2">
-                        <button className="btn-primary text-xs" onClick={handleAddCard}>
-                            Save card
                         </button>
                     </div>
                 </div>

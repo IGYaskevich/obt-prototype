@@ -18,6 +18,7 @@ import EmployeesPage from './pages/EmployeesPage'
 import ReportsPage from "./pages/ReportsPage.tsx";
 import CompanySettingsPage from "./pages/CompanySettingsPage.tsx";
 import EmployeeProfilePage from "./pages/EmployeeProfilePage.tsx";
+import CompanySignupPage from "./pages/CompanySignupPage.tsx";
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { user } = useStore()
@@ -46,6 +47,7 @@ export default function App() {
             <Route path="employees/:id" element={<EmployeeProfilePage />} />
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/settings/company" element={<CompanySettingsPage />} />
+            <Route path="/signup/company" element={<CompanySignupPage />} />
 
             <Route path="*" element={<NotFoundPage />} />
         </Routes>

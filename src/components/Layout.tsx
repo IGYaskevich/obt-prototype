@@ -83,9 +83,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </header>
-        <Link to="/assistant" className="btn-secondary w-full">
-          AI Assistant (beta)
-        </Link>
         <main className="container-page py-6">{children}</main>
       </div>
     </div>

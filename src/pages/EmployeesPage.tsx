@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import SectionHeader from '../components/SectionHeader'
-import { useStore, Employee } from '../state/store'
+import {useStore, Employee, Role} from '../state/store'
 import { Shield, Plus, AlertCircle, CheckCircle2, CreditCard } from 'lucide-react'
 
 export default function EmployeesPage() {
@@ -12,7 +12,7 @@ export default function EmployeesPage() {
     const [newName, setNewName] = useState('')
     const [newEmail, setNewEmail] = useState('')
     const [newDept, setNewDept] = useState('')
-    const [newRole, setNewRole] = useState<'ADMIN' | 'BOOKER' | 'VIEWER'>('BOOKER')
+    const [newRole, setNewRole] = useState<'ADMIN' | 'COORDINATOR'>('ADMIN')
 
     const handleAddEmployee = () => {
         if (!newName.trim() || !newEmail.trim()) {
@@ -28,7 +28,7 @@ export default function EmployeesPage() {
         setNewName('')
         setNewEmail('')
         setNewDept('')
-        setNewRole('BOOKER')
+        setNewRole('ADMIN')
         setShowAdd(false)
     }
 
@@ -115,11 +115,10 @@ export default function EmployeesPage() {
                                     <select
                                         className="select h-7 text-xs"
                                         value={e.role}
-                                        onChange={ev => updateEmployeeRole(e.id, ev.target.value as any)}
+                                        onChange={ev => updateEmployeeRole(e.id, ev.target.value as Role)}
                                     >
                                         <option value="ADMIN">Admin</option>
-                                        <option value="BOOKER">Booker</option>
-                                        <option value="VIEWER">Viewer</option>
+                                        <option value="COORDINATOR">Coordinator</option>
                                     </select>
                                 </td>
                                 <td className="px-3 py-2 text-xs">

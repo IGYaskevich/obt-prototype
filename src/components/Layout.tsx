@@ -8,7 +8,6 @@ const nav = [
   { to:'/dashboard', label:'Dashboard', icon: Building2 },
     { to:'/settings/company', label:'Setting', icon: Users },
     { to:'/search', label:'Search', icon: Plane },
-  { to:'/trip/new', label:'Trip basket', icon: ShoppingCart },
   { to:'/policies', label:'Policies', icon: ShieldCheck },
   { to:'/documents', label:'Documents', icon: ReceiptText },
   { to:'/support', label:'Support', icon: LifeBuoy },

@@ -9,7 +9,7 @@ import {
     ShoppingCart,
 } from 'lucide-react'
 
-type StatusFilter = 'ALL' | 'COMPLETED' | 'IN_PROGRESS' | 'NEEDS_APPROVAL' | 'CANCELLED'
+type StatusFilter = 'ALL' | 'COMPLETED' | 'IN_PROGRESS'  | 'CANCELLED'
 type TypeFilter = 'ALL' | 'single' | 'basket'
 
 export default function ReportsPage() {
@@ -34,15 +34,6 @@ export default function ReportsPage() {
             status: 'IN_PROGRESS',
             createdAt: '2025-11-12T11:00:00.000Z',
             employeeId: 'E2',
-        },
-        {
-            id: 'T3',
-            title: 'Almaty → Shymkent',
-            total: 95000,
-            type: 'single',
-            status: 'NEEDS_APPROVAL',
-            createdAt: '2025-11-15T13:30:00.000Z',
-            employeeId: 'E3',
         },
         {
             id: 'T4',
@@ -241,7 +232,6 @@ export default function ReportsPage() {
                             <option value="ALL">All</option>
                             <option value="COMPLETED">Completed</option>
                             <option value="IN_PROGRESS">In progress</option>
-                            <option value="NEEDS_APPROVAL">Needs approval</option>
                             <option value="CANCELLED">Cancelled</option>
                         </select>
                     </div>
@@ -390,9 +380,6 @@ function StatusBadge({ status }: { status: Trip['status'] }) {
     } else if (status === 'IN_PROGRESS') {
         cls = 'bg-sky-50 text-sky-700 border-sky-200'
         label = 'In progress'
-    } else if (status === 'NEEDS_APPROVAL') {
-        cls = 'bg-amber-50 text-amber-700 border-amber-200'
-        label = 'Needs approval'
     } else if (status === 'CANCELLED') {
         cls = 'bg-rose-50 text-rose-700 border-rose-200'
         label = 'Cancelled'

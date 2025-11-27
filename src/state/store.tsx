@@ -5,8 +5,28 @@ import React, { createContext, useContext, useMemo, useState } from 'react'
 export type Tariff = 'FREE' | 'POSTPAY' | 'FLEX'
 export type PolicyLevel = 'OK' | 'WARN' | 'BLOCK'
 
-export type Role = 'ADMIN' | 'BOOKER' | 'VIEWER'
-export type Permission = 'BUY' | 'BUILD_TRIP' | 'EXCHANGE' | 'VIEW_DOCS' | 'VIEW_ONLY'
+/**
+ * Роли:
+ * - ADMIN: настройки, тарифы, политики, сотрудники, всё управление.
+ * - COORDINATOR: только операционная работа (поиск, бронирование, отчёты).
+ */
+export type Role = 'ADMIN' | 'COORDINATOR'
+
+/**
+ * Права:
+ * - MANAGE_* — админские функции
+ * - BUY / BUILD_TRIP — операционная работа
+ * - VIEW_* — просмотровые вещи
+ */
+export type Permission =
+    | 'MANAGE_SETTINGS'
+    | 'MANAGE_POLICIES'
+    | 'MANAGE_TARIFFS'
+    | 'MANAGE_EMPLOYEES'
+    | 'BUY'
+    | 'BUILD_TRIP'
+    | 'VIEW_DOCS'
+    | 'VIEW_REPORTS'
 
 export type User = {
     email: string
@@ -35,8 +55,21 @@ export type Flight = {
     changeable: boolean
 }
 
-export type BookingStatus = 'COMPLETED' | 'IN_PROGRESS' | 'NEEDS_APPROVAL' | 'CANCELLED'
-export type BookingType = 'single' | 'basket'
+/**
+ * Статусы бронирования:
+ * - COMPLETED: выкуплено / завершено
+ * - IN_PROGRESS: пользователь в процессе
+ * - FLAGGED: выбивается из политики (без "аппрува")
+ * - CANCELLED: отменено
+ */
+export type BookingStatus = 'COMPLETED' | 'IN_PROGRESS' | 'FLAGGED' | 'CANCELLED'
+
+/**
+ * Тип бронирования:
+ * Исторически был 'single' | 'basket', сейчас оставляем только 'single'
+ * как одиночную бронь (даже если внутри есть несколько услуг).
+ */
+export type BookingType = 'single'
 
 export type Trip = {
     id: string
@@ -93,7 +126,7 @@ type Store = {
     selectFlight: (id: string) => void
 
     trips: Trip[]
-    addTrip: (trip: Omit<Trip, 'id' | 'createdAt'>) => void
+    addTrip: (trip: Omit<Trip, 'id' | 'createdAt' | 'type'>) => void
 
     employees: Employee[]
     addEmployee: (e: Omit<Employee, 'id' | 'documents' | 'cards'>) => void
@@ -174,7 +207,26 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const [company, setCompany] = useState<Company | null>(null)
     const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null)
 
-    const [trips, setTrips] = useState<Trip[]>([])
+    const [trips, setTrips] = useState<Trip[]>([
+        {
+            id: 'T1',
+            title: 'Almaty → Astana (Ignat Admin)',
+            total: 42000,
+            type: 'single',
+            status: 'COMPLETED',
+            createdAt: '2025-11-20T10:00:00Z',
+            employeeId: 'E1',
+        },
+        {
+            id: 'T2',
+            title: 'Almaty → Astana (Mariya Coordinator)',
+            total: 51000,
+            type: 'single',
+            status: 'FLAGGED',
+            createdAt: '2025-11-22T07:30:00Z',
+            employeeId: 'E2',
+        },
+    ])
 
     const [employees, setEmployees] = useState<Employee[]>([
         {
@@ -199,34 +251,26 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         },
         {
             id: 'E2',
-            name: 'Mariya Booker',
-            email: 'booker@company.com',
-            role: 'BOOKER',
+            name: 'Mariya Coordinator',
+            email: 'coordinator@company.com',
+            role: 'COORDINATOR',
             department: 'Operations',
             documents: [
-                { type: 'PASSPORT', number: 'K7654321', expirationDate: '2024-01-01', status: 'EXPIRED' },
+                { type: 'PASSPORT', number: 'K7654321', expirationDate: '2026-11-01', status: 'VALID' },
             ],
-            cards: [],
-        },
-        {
-            id: 'E3',
-            name: 'Alex Viewer',
-            email: 'viewer@company.com',
-            role: 'VIEWER',
-            department: 'Sales',
-            documents: [],
             cards: [],
         },
     ])
 
     /* ----- Trips ----- */
 
-    const addTrip = (trip: Omit<Trip, 'id' | 'createdAt'>) =>
+    const addTrip = (trip: Omit<Trip, 'id' | 'createdAt' | 'type'>) =>
         setTrips(prev => [
             {
                 ...trip,
                 id: crypto.randomUUID(),
                 createdAt: new Date().toISOString(),
+                type: 'single',
             },
             ...prev,
         ])
@@ -234,10 +278,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     /* ----- Auth / company ----- */
 
     const login = (email: string, tariff: Tariff) => {
-        const role: Role =
-            email.includes('admin') ? 'ADMIN'
-                : email.includes('booker') ? 'BOOKER'
-                    : 'VIEWER'
+        const role: Role = email.includes('admin') ? 'ADMIN' : 'COORDINATOR'
 
         setUser({ email, companyName: 'Demo Company LLC', role })
         setCompany({
@@ -350,9 +391,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const hasPermission = (p: Permission) => {
         if (!user) return false
         const r = user.role
-        if (r === 'ADMIN') return true
-        if (r === 'BOOKER') return p !== 'EXCHANGE'
-        if (r === 'VIEWER') return p === 'VIEW_DOCS' || p === 'VIEW_ONLY'
+
+        if (r === 'ADMIN') {
+            // Админ может всё
+            return true
+        }
+
+        if (r === 'COORDINATOR') {
+            if (p === 'BUY' || p === 'BUILD_TRIP' || p === 'VIEW_DOCS' || p === 'VIEW_REPORTS') {
+                return true
+            }
+            return false
+        }
+
         return false
     }
 

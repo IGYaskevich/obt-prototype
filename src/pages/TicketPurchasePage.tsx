@@ -69,7 +69,7 @@ export default function TicketPurchasePage() {
                 title: `Trip ${selectedFlight.from}-${selectedFlight.to}`,
                 total,
                 type: 'single',
-                status: needsApproval ? 'NEEDS_APPROVAL' : 'COMPLETED',
+                status:  'COMPLETED',
                 employeeId,
             } as any)
 

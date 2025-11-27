@@ -42,15 +42,6 @@ export default function DashboardPage() {
             employeeId: 'E2',
         },
         {
-            id: 'T3',
-            title: 'Almaty → Shymkent',
-            total: 95000,
-            type: 'single',
-            status: 'NEEDS_APPROVAL',
-            createdAt: '2025-11-15T13:30:00.000Z',
-            employeeId: 'E3',
-        },
-        {
             id: 'T4',
             title: 'Astana → Almaty (return)',
             total: 115000,
@@ -82,7 +73,6 @@ export default function DashboardPage() {
         const byStatus = (list: Trip[]) => ({
             COMPLETED: list.filter(t => t.status === 'COMPLETED').length,
             IN_PROGRESS: list.filter(t => t.status === 'IN_PROGRESS').length,
-            NEEDS_APPROVAL: list.filter(t => t.status === 'NEEDS_APPROVAL').length,
             CANCELLED: list.filter(t => t.status === 'CANCELLED').length,
         })
 
@@ -149,7 +139,7 @@ export default function DashboardPage() {
 
     const upcomingTrips = useMemo(() => {
         const relevant = sourceTrips.filter(
-            t => t.status === 'IN_PROGRESS' || t.status === 'NEEDS_APPROVAL' || t.status === 'COMPLETED'
+            t => t.status === 'IN_PROGRESS' || t.status === 'COMPLETED'
         )
         const withParsed = relevant
             .map(t => ({ ...t, date: new Date(t.createdAt) }))
@@ -159,15 +149,12 @@ export default function DashboardPage() {
     }, [sourceTrips])
 
     const compliance = useMemo(() => {
-        const needsApproval = sourceTrips.filter(t => t.status === 'NEEDS_APPROVAL').length
         const cancelled = sourceTrips.filter(t => t.status === 'CANCELLED').length
         const inProgress = sourceTrips.filter(t => t.status === 'IN_PROGRESS').length
 
         return {
-            needsApproval,
             cancelled,
             inProgress,
-            violations: needsApproval, // в демо считаем NEEDS_APPROVAL как нарушения политики
         }
     }, [sourceTrips])
 
@@ -181,16 +168,6 @@ export default function DashboardPage() {
         onClick: () => void
     }[] = []
 
-    if (compliance.needsApproval > 0) {
-        inboxTasks.push({
-            id: 'approvals',
-            title: 'Trips waiting for approval',
-            description: `${compliance.needsApproval} trip(s) need your decision.`,
-            severity: 'high',
-            ctaLabel: 'Open approvals',
-            onClick: () => nav('/approvals'),
-        })
-    }
 
     if (employeeActivity.docIssues.length > 0) {
         inboxTasks.push({
@@ -389,13 +366,6 @@ export default function DashboardPage() {
                     value={analytics.allStatus.IN_PROGRESS}
                     hint="Baskets and pending flows"
                 />
-                <KpiCard
-                    title="Needs approval"
-                    value={analytics.allStatus.NEEDS_APPROVAL}
-                    hint="Out-of-policy or over budget"
-                    accent="warn"
-                    onClick={() => nav('/approvals')}
-                />
             </div>
 
             <div className="card p-4">
@@ -411,7 +381,6 @@ export default function DashboardPage() {
                         items={[
                             { label: 'Completed', value: analytics.allStatus.COMPLETED },
                             { label: 'In progress', value: analytics.allStatus.IN_PROGRESS },
-                            { label: 'Needs approval', value: analytics.allStatus.NEEDS_APPROVAL },
                             { label: 'Cancelled', value: analytics.allStatus.CANCELLED },
                         ]}
                     />
@@ -423,7 +392,6 @@ export default function DashboardPage() {
                                 value:
                                     analytics.flightsStatus.COMPLETED +
                                     analytics.flightsStatus.IN_PROGRESS +
-                                    analytics.flightsStatus.NEEDS_APPROVAL +
                                     analytics.flightsStatus.CANCELLED,
                             },
                             {
@@ -431,7 +399,6 @@ export default function DashboardPage() {
                                 value:
                                     analytics.basketsStatus.COMPLETED +
                                     analytics.basketsStatus.IN_PROGRESS +
-                                    analytics.basketsStatus.NEEDS_APPROVAL +
                                     analytics.basketsStatus.CANCELLED,
                             },
                         ]}
@@ -544,16 +511,6 @@ export default function DashboardPage() {
                     </div>
 
                     <div className="grid grid-cols-3 gap-2 text-xs">
-                        <SmallKpi
-                            label="Violations (demo)"
-                            value={compliance.violations}
-                            warn
-                        />
-                        <SmallKpi
-                            label="Needs approval"
-                            value={compliance.needsApproval}
-                            warn={compliance.needsApproval > 0}
-                        />
                         <SmallKpi
                             label="Cancelled"
                             value={compliance.cancelled}
@@ -817,8 +774,6 @@ function statusLabel(s: any) {
             return 'Completed'
         case 'IN_PROGRESS':
             return 'In progress'
-        case 'NEEDS_APPROVAL':
-            return 'Needs approval'
         case 'CANCELLED':
             return 'Cancelled'
         default:

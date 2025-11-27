@@ -8,7 +8,7 @@ export function TypeAnalyticsCard({
                            }:{
     title: string
     total: number
-    byStatus: { COMPLETED:number; IN_PROGRESS:number; NEEDS_APPROVAL:number; CANCELLED:number }
+    byStatus: { COMPLETED:number; IN_PROGRESS:number;  CANCELLED:number }
     onOpen: () => void
 }) {
     return (
@@ -24,7 +24,6 @@ export function TypeAnalyticsCard({
             <div className="grid grid-cols-2 gap-2">
                 <SmallKpi label="Completed" value={byStatus.COMPLETED} />
                 <SmallKpi label="In progress" value={byStatus.IN_PROGRESS} />
-                <SmallKpi label="Needs approval" value={byStatus.NEEDS_APPROVAL} warn />
                 <SmallKpi label="Cancelled" value={byStatus.CANCELLED} />
             </div>
 
@@ -33,7 +32,6 @@ export function TypeAnalyticsCard({
                 items={[
                     { label: 'Completed', value: byStatus.COMPLETED },
                     { label: 'In progress', value: byStatus.IN_PROGRESS },
-                    { label: 'Needs approval', value: byStatus.NEEDS_APPROVAL },
                     { label: 'Cancelled', value: byStatus.CANCELLED },
                 ]}
             />

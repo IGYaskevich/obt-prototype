@@ -4,6 +4,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useStore } from '../state/store'
 import { BarChart2, FileCheck2, FileText, LayoutDashboard, LifeBuoy, LogOut, Search, Settings, Users } from 'lucide-react'
 import { NotificationCenter } from './NotificationCenter.tsx'
+import { QuickActionMenu } from './QuickActionMenu.tsx'
 
 type Props = {
    children: React.ReactNode
@@ -38,7 +39,6 @@ export default function Layout({ children }: Props) {
             <div className="h-14 px-4 flex items-center border-b border-slate-100">
                <div className="font-semibold text-sm tracking-tight">Freedom Business Travel</div>
             </div>
-
             <nav className="flex-1 px-2 py-3 space-y-1 text-sm">
                <NavItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
                <NavItem to="/search" icon={Search} label="Поиск" />
@@ -48,6 +48,7 @@ export default function Layout({ children }: Props) {
                <NavItem to="/settings/company" icon={Settings} label="Настройки компании" />
                <NavItem to="/support" icon={LifeBuoy} label="Поддержка" />
                <NavItem to="/policies" icon={FileText} label="Политики" />
+               <NavItem to="/penaltes" icon={FileText} label="Штрафы" />
             </nav>
 
             <div className="border-t border-slate-100 px-3 py-3 text-xs space-y-2">
@@ -90,6 +91,7 @@ export default function Layout({ children }: Props) {
                      <NavItem to="/settings/company" icon={Settings} label="Настройки компании" />
                      <NavItem to="/support" icon={LifeBuoy} label="Поддержка" />
                      <NavItem to="/policies" icon={FileText} label="Политики" />
+                     <NavItem to="/penaltes" icon={FileText} label="Штрафы" />
                   </nav>
 
                   <div className="border-t border-slate-100 px-3 py-3 text-xs space-y-2">

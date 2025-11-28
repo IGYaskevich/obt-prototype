@@ -3,16 +3,17 @@ import { useNavigate } from 'react-router-dom'
 import SectionHeader from '../components/SectionHeader'
 import { Trip, useStore } from '../state/store'
 import { AlertTriangle, ArrowRight, Clock, CreditCard, FileText, LifeBuoy, Plane, ShieldCheck, TrendingUp, Users, Wallet } from 'lucide-react'
+import { PenaltySummaryWidget } from '../components/PenaltySummaryWidget'
 
 export default function DashboardPage() {
    const nav = useNavigate()
    const { company, trips, employees, hasPermission } = useStore()
 
-   // Локальные мок-трипы для демо, если из стора пока пусто
+   // Локальные мок-данные, если нет данных в сторах
    const [demoTrips] = useState<Trip[]>([
       {
          id: 'T1',
-         title: 'Almaty → Astana (business trip)',
+         title: 'Алматы → Астана (командировка)',
          total: 120000,
          type: 'single',
          status: 'COMPLETED',
@@ -21,7 +22,7 @@ export default function DashboardPage() {
       },
       {
          id: 'T2',
-         title: 'Almaty → Astana + hotel',
+         title: 'Алматы → Астана + отель',
          total: 210000,
          type: 'single',
          status: 'IN_PROGRESS',
@@ -30,7 +31,7 @@ export default function DashboardPage() {
       },
       {
          id: 'T4',
-         title: 'Astana → Almaty (return)',
+         title: 'Астана → Алматы (обратный рейс)',
          total: 115000,
          type: 'single',
          status: 'CANCELLED',
@@ -39,7 +40,7 @@ export default function DashboardPage() {
       },
       {
          id: 'T5',
-         title: 'Almaty → Istanbul (Flex)',
+         title: 'Алматы → Стамбул (Flex)',
          total: 380000,
          type: 'single',
          status: 'COMPLETED',
@@ -48,14 +49,13 @@ export default function DashboardPage() {
       },
    ])
 
-   // Источник данных для дашборда: реальные из стора или моки
    const sourceTrips = trips.length > 0 ? trips : demoTrips
-
    if (!company) return null
 
    const canBuy = hasPermission('BUY')
    const canBuildTrip = hasPermission('BUILD_TRIP')
 
+   /* --- АНАЛИТИКА --- */
    const analytics = useMemo(() => {
       const byStatus = (list: Trip[]) => ({
          COMPLETED: list.filter(t => t.status === 'COMPLETED').length,
@@ -69,7 +69,6 @@ export default function DashboardPage() {
       const allStatus = byStatus(sourceTrips)
       const flightsStatus = byStatus(flights)
 
-      // Простейшая помесячная агрегация по createdAt
       const monthly: Record<string, number> = {}
       sourceTrips.forEach(t => {
          const dt = new Date(t.createdAt)
@@ -93,6 +92,7 @@ export default function DashboardPage() {
       }
    }, [sourceTrips])
 
+   /* --- АКТИВНОСТЬ СОТРУДНИКОВ --- */
    const employeeActivity = useMemo(() => {
       const byEmployee: Record<string, number> = {}
       sourceTrips.forEach(t => {
@@ -105,7 +105,7 @@ export default function DashboardPage() {
             const emp = employees.find(e => e.id === id)
             return {
                id,
-               name: emp?.name ?? 'Unknown',
+               name: emp?.name ?? 'Неизвестный сотрудник',
                dept: emp?.department ?? '',
                count,
             }
@@ -133,14 +133,10 @@ export default function DashboardPage() {
    const compliance = useMemo(() => {
       const cancelled = sourceTrips.filter(t => t.status === 'CANCELLED').length
       const inProgress = sourceTrips.filter(t => t.status === 'IN_PROGRESS').length
-
-      return {
-         cancelled,
-         inProgress,
-      }
+      return { cancelled, inProgress }
    }, [sourceTrips])
 
-   // Inbox / задачи для пользователя
+   // Задачи для пользователя
    const inboxTasks: {
       id: string
       title: string
@@ -153,10 +149,10 @@ export default function DashboardPage() {
    if (employeeActivity.docIssues.length > 0) {
       inboxTasks.push({
          id: 'docs',
-         title: 'Employee document issues',
-         description: `${employeeActivity.docIssues.length} employee(s) with missing or expired documents.`,
+         title: 'Проблемы с документами сотрудников',
+         description: `${employeeActivity.docIssues.length} сотрудник(ов) с отсутствующими или просроченными документами.`,
          severity: 'medium',
-         ctaLabel: 'Fix documents',
+         ctaLabel: 'Исправить документы',
          onClick: () => nav('/employees'),
       })
    }
@@ -164,10 +160,10 @@ export default function DashboardPage() {
    if ((company.tariff === 'POSTPAY' || company.tariff === 'FLEX') && company.postpayDueDays <= 7) {
       inboxTasks.push({
          id: 'postpay',
-         title: 'Upcoming postpay payment',
-         description: `Postpay payment due in ${company.postpayDueDays} day(s).`,
+         title: 'Скоро срок оплаты Postpay',
+         description: `Срок оплаты — через ${company.postpayDueDays} дней.`,
          severity: 'medium',
-         ctaLabel: 'View documents',
+         ctaLabel: 'Посмотреть документы',
          onClick: () => nav('/documents'),
       })
    }
@@ -175,10 +171,10 @@ export default function DashboardPage() {
    if (!canBuy) {
       inboxTasks.push({
          id: 'role',
-         title: 'Limited permissions',
-         description: 'Your role does not allow you to buy tickets. Contact admin if needed.',
+         title: 'Недостаточно прав',
+         description: 'Ваша роль не позволяет оформлять билеты. Обратитесь к администратору.',
          severity: 'low',
-         ctaLabel: 'View employees & roles',
+         ctaLabel: 'Управление сотрудниками',
          onClick: () => nav('/employees'),
       })
    }
@@ -186,46 +182,46 @@ export default function DashboardPage() {
    return (
       <div className="space-y-6">
          <SectionHeader
-            title="Company dashboard"
-            subtitle="Summary of balances, trips, policies and actions"
+            title="Дашборд компании"
+            subtitle="Баланс, командировки, политика, штрафы и действия"
             right={
                <button className="btn-primary" disabled={!canBuy} onClick={() => canBuy && nav('/search')}>
-                  Book flight
+                  Купить билет
                </button>
             }
          />
 
-         {/* Company summary */}
+         {/* Баланс и тарифы */}
          <div className="grid md:grid-cols-4 gap-4">
             <div className="card p-4">
                <div className="flex items-center gap-2 text-slate-500 text-sm">
-                  <Wallet size={16} /> Balance
+                  <Wallet size={16} /> Баланс
                </div>
                <div className="text-2xl font-semibold mt-1">{company.balance.toLocaleString()} ₸</div>
-               <div className="text-xs text-slate-500 mt-1">Available for instant purchases</div>
+               <div className="text-xs text-slate-500 mt-1">Доступно для моментальной покупки</div>
             </div>
 
             <button className="card p-4 text-left hover:shadow-md transition" onClick={() => nav('/tariffs')}>
                <div className="flex items-center gap-2 text-slate-500 text-sm">
-                  <CreditCard size={16} /> Tariff
+                  <CreditCard size={16} /> Тариф
                </div>
                <div className="text-2xl font-semibold mt-1">{company.tariff}</div>
                <div className="text-xs text-slate-500 mt-1">
-                  {company.tariff === 'FREE' && 'Self-service, no support, pay by personal card'}
-                  {company.tariff === 'POSTPAY' && 'Postpay with service fee ~7% and support'}
-                  {company.tariff === 'FLEX' && 'VIP support, exchanges/returns and integrations'}
+                  {company.tariff === 'FREE' && 'Самообслуживание, оплата личной картой, без поддержки'}
+                  {company.tariff === 'POSTPAY' && 'Отложенная оплата, поддержка, сервисные сборы'}
+                  {company.tariff === 'FLEX' && 'VIP-поддержка, обмены/возвраты, интеграции'}
                </div>
-               <div className="text-xs text-brand-600 mt-2">View tariff details →</div>
+               <div className="text-xs text-brand-600 mt-2">Подробнее →</div>
             </button>
 
             <div className="card p-4">
                <div className="flex items-center gap-2 text-slate-500 text-sm">
-                  <ShieldCheck size={16} /> Policies
+                  <ShieldCheck size={16} /> Политики
                </div>
-               <div className="text-lg font-semibold mt-1">Active</div>
-               <div className="text-xs text-slate-500 mt-1">Economy class, max 120 000 ₸ per segment</div>
+               <div className="text-lg font-semibold mt-1">Активна</div>
+               <div className="text-xs text-slate-500 mt-1">Эконом-класс, лимит 120 000 ₸ за сегмент</div>
                <button className="btn-ghost mt-3" onClick={() => nav('/policies')}>
-                  Open policies
+                  Открыть политики
                </button>
             </div>
 
@@ -234,53 +230,56 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-2 text-slate-500 text-sm">
                      <Clock size={16} /> Postpay
                   </div>
-                  <div className="text-lg font-semibold mt-1">Limit: {company.postpayLimit.toLocaleString()} ₸</div>
-                  <div className="text-xs text-slate-500 mt-1">Payment due in {company.postpayDueDays} days</div>
+                  <div className="text-lg font-semibold mt-1">Лимит: {company.postpayLimit.toLocaleString()} ₸</div>
+                  <div className="text-xs text-slate-500 mt-1">Оплатить через {company.postpayDueDays} дней</div>
                   <div className="mt-3">
-                     <MiniBarSingle label="Usage (demo)" used={Math.round(company.postpayLimit * 0.35)} total={company.postpayLimit} />
+                     <MiniBarSingle label="Использовано (демо)" used={Math.round(company.postpayLimit * 0.35)} total={company.postpayLimit} />
                   </div>
                </div>
             ) : (
                <div className="card p-4 bg-slate-50/60">
                   <div className="flex items-center gap-2 text-slate-500 text-sm">
-                     <TrendingUp size={16} /> Upgrade
+                     <TrendingUp size={16} /> Улучшить тариф
                   </div>
-                  <div className="text-sm font-semibold mt-1">Unlock Postpay & support</div>
-                  <div className="text-xs text-slate-500 mt-1">Switch to Postpay or Flex to enable delayed payments and exchanges.</div>
+                  <div className="text-sm font-semibold mt-1">Открыть Postpay и поддержку</div>
+                  <div className="text-xs text-slate-500 mt-1">Перейдите на Postpay или Flex, чтобы открыть отложенную оплату и расширенные функции.</div>
                   <button className="btn-primary mt-3" onClick={() => nav('/tariffs')}>
-                     View tariffs
+                     Смотреть тарифы
                   </button>
                </div>
             )}
          </div>
 
-         {/* Overall analytics */}
+         {/* KPI */}
          <div className="grid md:grid-cols-3 gap-4">
-            <KpiCard title="Completed trips" value={analytics.allStatus.COMPLETED} hint="Paid and issued docs" accent="ok" />
-            <KpiCard title="In progress" value={analytics.allStatus.IN_PROGRESS} hint="Baskets and pending flows" />
+            <KpiCard title="Завершённые поездки" value={analytics.allStatus.COMPLETED} hint="Оформлены и выданы документы" accent="ok" />
+            <KpiCard title="В процессе" value={analytics.allStatus.IN_PROGRESS} hint="Черновики и незавершённые заказы" />
          </div>
 
+         {/* Статистика */}
          <div className="card p-4">
             <div className="flex items-center justify-between">
-               <div className="text-sm font-medium">Trips distribution</div>
+               <div className="text-sm font-medium">Распределение поездок</div>
                <div className="text-xs text-slate-500">
-                  Total trips: {analytics.total} · Spend: {analytics.totalSpend.toLocaleString()} ₸
+                  Всего: {analytics.total} · Сумма: {analytics.totalSpend.toLocaleString()} ₸
                </div>
             </div>
+
             <div className="mt-3 grid md:grid-cols-2 gap-4">
                <MiniBars
-                  title="By status"
+                  title="По статусу"
                   items={[
-                     { label: 'Completed', value: analytics.allStatus.COMPLETED },
-                     { label: 'In progress', value: analytics.allStatus.IN_PROGRESS },
-                     { label: 'Cancelled', value: analytics.allStatus.CANCELLED },
+                     { label: 'Завершено', value: analytics.allStatus.COMPLETED },
+                     { label: 'В процессе', value: analytics.allStatus.IN_PROGRESS },
+                     { label: 'Отменено', value: analytics.allStatus.CANCELLED },
                   ]}
                />
+
                <MiniBars
-                  title="By booking type"
+                  title="По типу заказа"
                   items={[
                      {
-                        label: 'Single tickets',
+                        label: 'Авиабилеты',
                         value: analytics.flightsStatus.COMPLETED + analytics.flightsStatus.IN_PROGRESS + analytics.flightsStatus.CANCELLED,
                      },
                   ]}
@@ -288,21 +287,22 @@ export default function DashboardPage() {
             </div>
          </div>
 
-         {/* Employee activity & upcoming trips */}
+         {/* Сотрудники + ближайшие поездки */}
          <div className="grid md:grid-cols-2 gap-4">
-            {/* Employee activity */}
+            {/* Активность сотрудников */}
             <div className="card p-4 space-y-3">
                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-sm font-medium">
-                     <Users size={16} /> Employee activity
+                     <Users size={16} /> Активность сотрудников
                   </div>
                   <button className="btn-ghost text-xs" onClick={() => nav('/employees')}>
-                     Manage
+                     Управлять
                   </button>
                </div>
 
-               <div className="text-xs text-slate-500">Top travelers</div>
-               {employeeActivity.topTravelers.length === 0 && <div className="text-sm text-slate-500">No trips yet.</div>}
+               <div className="text-xs text-slate-500">Топ путешественников</div>
+               {employeeActivity.topTravelers.length === 0 && <div className="text-sm text-slate-500">Пока нет данных.</div>}
+
                <div className="space-y-2">
                   {employeeActivity.topTravelers.map(t => (
                      <div key={t.id} className="flex items-center justify-between text-sm border-t border-slate-100 pt-2">
@@ -310,38 +310,40 @@ export default function DashboardPage() {
                            <div className="font-medium">{t.name}</div>
                            <div className="text-xs text-slate-500">{t.dept || '—'}</div>
                         </div>
-                        <div className="text-xs text-slate-600">{t.count} trips</div>
+                        <div className="text-xs text-slate-600">{t.count} поездок</div>
                      </div>
                   ))}
                </div>
 
-               <div className="text-xs text-slate-500 mt-3">Document issues</div>
+               <div className="text-xs text-slate-500 mt-3">Проблемы с документами</div>
+
                {employeeActivity.docIssues.length === 0 && (
-                  <div className="text-xs text-emerald-700 bg-emerald-50/40 border border-emerald-200 rounded-lg p-2">No document issues detected in demo.</div>
+                  <div className="text-xs text-emerald-700 bg-emerald-50/40 border border-emerald-200 rounded-lg p-2">Нет проблем с документами.</div>
                )}
+
                {employeeActivity.docIssues.length > 0 && (
                   <div className="space-y-1">
                      {employeeActivity.docIssues.map(e => (
                         <div key={e.id} className="text-xs text-amber-800 bg-amber-50/40 border border-amber-200 rounded-lg p-2">
-                           {e.name} — missing or expired documents
+                           {e.name} — отсутствуют или просрочены документы
                         </div>
                      ))}
                   </div>
                )}
             </div>
 
-            {/* Upcoming trips */}
+            {/* Ближайшие поездки */}
             <div className="card p-4 space-y-3">
                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-sm font-medium">
-                     <Clock size={16} /> Upcoming / active trips
+                     <Clock size={16} /> Скорые / активные поездки
                   </div>
                   <button className="btn-ghost text-xs" onClick={() => nav('/documents')}>
-                     Open trips
+                     Все поездки
                   </button>
                </div>
 
-               {upcomingTrips.length === 0 && <div className="text-sm text-slate-500">No active trips yet.</div>}
+               {upcomingTrips.length === 0 && <div className="text-sm text-slate-500">Нет активных поездок.</div>}
 
                <div className="space-y-2">
                   {upcomingTrips.map(t => (
@@ -349,7 +351,7 @@ export default function DashboardPage() {
                         <div>
                            <div>{t.title}</div>
                            <div className="text-xs text-slate-500">
-                              {t.type === 'single' ? 'Single ticket' : 'Trip basket'} · {statusLabel(t.status)}
+                              {t.type === 'single' ? 'Авиабилет' : 'Командировка'} · {statusLabel(t.status)}
                            </div>
                         </div>
                         <div className="text-xs text-slate-600">{t.total.toLocaleString()} ₸</div>
@@ -359,30 +361,28 @@ export default function DashboardPage() {
             </div>
          </div>
 
-         {/* Policy & compliance + spend insights */}
+         {/* Политики + расходы */}
          <div className="grid md:grid-cols-2 gap-4">
-            {/* Policy & compliance */}
+            {/* Политики */}
             <div className="card p-4 space-y-3">
                <div className="flex items-center gap-2 text-sm font-medium">
-                  <AlertTriangle size={16} /> Policy & compliance
+                  <AlertTriangle size={16} /> Политика и соответствие
                </div>
 
                <div className="grid grid-cols-3 gap-2 text-xs">
-                  <SmallKpi label="Cancelled" value={compliance.cancelled} />
+                  <SmallKpi label="Отменено" value={compliance.cancelled} warn />
                </div>
 
-               <div className="text-xs text-slate-500 mt-2">
-                  In this prototype, trips with status “Needs approval” are treated as potential policy violations (out-of-policy or over budget).
-               </div>
+               <div className="text-xs text-slate-500 mt-2">В прототипе поездки со статусом “Needs approval” считаются потенциальными нарушениями политик.</div>
             </div>
 
-            {/* Spend insights */}
+            {/* Расходы по месяцам */}
             <div className="card p-4 space-y-3">
                <div className="flex items-center gap-2 text-sm font-medium">
-                  <TrendingUp size={16} /> Spend insights (demo)
+                  <TrendingUp size={16} /> Аналитика расходов
                </div>
 
-               {analytics.monthlyItems.length === 0 && <div className="text-sm text-slate-500">No spending data yet. After purchases, monthly trends will appear here.</div>}
+               {analytics.monthlyItems.length === 0 && <div className="text-sm text-slate-500">Нет данных. После покупок здесь появится тренд расходов.</div>}
 
                {analytics.monthlyItems.length > 0 && (
                   <div className="space-y-2">
@@ -393,12 +393,7 @@ export default function DashboardPage() {
                               <span>{m.value.toLocaleString()} ₸</span>
                            </div>
                            <div className="h-2 bg-slate-100 rounded-full overflow-hidden mt-1">
-                              <div
-                                 className="h-full bg-brand-500/70"
-                                 style={{
-                                    width: `${Math.min(100, (m.value / (analytics.totalSpend || 1)) * 100 * 1.5)}%`,
-                                 }}
-                              />
+                              <div className="h-full bg-brand-500/70" style={{ width: `${Math.min(100, (m.value / (analytics.totalSpend || 1)) * 100 * 1.5)}%` }} />
                            </div>
                         </div>
                      ))}
@@ -407,34 +402,35 @@ export default function DashboardPage() {
             </div>
          </div>
 
-         {/* Quick actions + support */}
+         {/* Быстрые действия */}
          <div className="grid md:grid-cols-3 gap-4">
-            <Action title="Book flight / train" icon={Plane} onClick={() => nav('/search')} disabled={!canBuy} />
-            <Action title="Closing documents" icon={FileText} onClick={() => nav('/business-trips')} />
-            <Action title="Policies & approvals" icon={ShieldCheck} onClick={() => nav('/policies')} />
-            <Action title="Employees & access" icon={Users} onClick={() => nav('/employees')} />
-            <Action title={company.tariff === 'FLEX' ? '24/7 VIP support' : 'Support / FAQ'} icon={LifeBuoy} onClick={() => nav('/support')} />
+            <Action title="Авиабилеты / ЖД" icon={Plane} onClick={() => nav('/search')} disabled={!canBuy} />
+            <Action title="Закрывающие документы" icon={FileText} onClick={() => nav('/business-trips')} />
+            <Action title="Политики и согласования" icon={ShieldCheck} onClick={() => nav('/policies')} />
+            <Action title="Сотрудники и доступы" icon={Users} onClick={() => nav('/employees')} />
+            <Action title={company.tariff === 'FLEX' ? 'VIP-поддержка 24/7' : 'Поддержка / FAQ'} icon={LifeBuoy} onClick={() => nav('/support')} />
+            <PenaltySummaryWidget />
          </div>
 
-         {/* News / updates */}
+         {/* Новости */}
          <div className="card p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div>
-               <div className="text-sm font-medium">Product updates (demo)</div>
+               <div className="text-sm font-medium">Обновления продукта (демо)</div>
                <ul className="text-xs text-slate-600 mt-1 list-disc pl-4 space-y-1">
-                  <li>Rail (RW) search added to the main search flow.</li>
-                  <li>Employee documents now checked during booking.</li>
-                  <li>Closing documents download is available per trip or for all trips.</li>
+                  <li>Добавлен поиск ЖД-билетов в общий флоу.</li>
+                  <li>Проверка документов сотрудников при покупке.</li>
+                  <li>Скачивание закрывающих документов по одной поездке или всех сразу.</li>
                </ul>
             </div>
             <button className="btn-ghost text-xs" onClick={() => nav('/support')}>
-               View all updates & FAQ
+               Смотреть все обновления
             </button>
          </div>
       </div>
    )
 }
 
-/* === Helpers / small components === */
+/* === ВСПОМОГАТЕЛЬНЫЕ КОМПОНЕНТЫ === */
 
 function KpiCard({ title, value, hint, accent, onClick }: { title: string; value: number; hint: string; accent?: 'warn' | 'ok'; onClick?: () => void }) {
    return (
@@ -513,11 +509,11 @@ function Action({ title, icon: Icon, onClick, disabled }: { title: string; icon:
 function statusLabel(s: any) {
    switch (s) {
       case 'COMPLETED':
-         return 'Completed'
+         return 'Завершено'
       case 'IN_PROGRESS':
-         return 'In progress'
+         return 'В процессе'
       case 'CANCELLED':
-         return 'Cancelled'
+         return 'Отменено'
       default:
          return String(s)
    }

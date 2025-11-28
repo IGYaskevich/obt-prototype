@@ -10,108 +10,117 @@ export default function TravelPolicyPage() {
 
    return (
       <div className="space-y-6">
-         <SectionHeader title="Travel policy" subtitle="Read-only view of current company travel rules used in search and booking flows." />
+         <SectionHeader title="Тревел-политика" subtitle="Текущие правила компании, которые используются при поиске и бронировании." />
 
-         {/* SUMMARY */}
+         {/* ОБЩАЯ ИНФОРМАЦИЯ */}
          <div className="card p-4 grid md:grid-cols-3 gap-4 text-sm">
             <div className="flex items-start gap-2">
                <Shield size={18} className="mt-1 text-slate-600" />
                <div>
-                  <div className="font-semibold">Overview</div>
+                  <div className="font-semibold">Общие правила</div>
                   <div className="text-xs text-slate-600 mt-1">
-                     These rules are configured by admin in Company Settings. Coordinators see their effect in search results and booking flows as OK / WARN / BLOCK flags.
+                     Эти параметры настраиваются администратором компании. Координаторы видят статус билетов как OK / WARN / BLOCK в выдаче поиска и в процессе бронирования.
                   </div>
                </div>
             </div>
+
             <div className="text-xs text-slate-600 space-y-1">
-               <div className="font-semibold text-[11px]">Price logic</div>
+               <div className="font-semibold text-[11px]">Логика стоимости</div>
                <ul className="list-disc list-inside space-y-1">
                   <li>
                      <span className="inline-flex items-center gap-1">
                         <Dot color="emerald" /> OK:
                      </span>{' '}
-                     below {softLimit.toLocaleString('ru-RU')} KZT
+                     до {softLimit.toLocaleString('ru-RU')} ₸
                   </li>
                   <li>
                      <span className="inline-flex items-center gap-1">
                         <Dot color="amber" /> WARN:
                      </span>{' '}
-                     {softLimit.toLocaleString('ru-RU')} – {blockLimit.toLocaleString('ru-RU')} KZT
+                     {softLimit.toLocaleString('ru-RU')} — {blockLimit.toLocaleString('ru-RU')} ₸
                   </li>
                   <li>
                      <span className="inline-flex items-center gap-1">
                         <Dot color="red" /> BLOCK:
                      </span>{' '}
-                     above {blockLimit.toLocaleString('ru-RU')} KZT
+                     выше {blockLimit.toLocaleString('ru-RU')} ₸
                   </li>
                </ul>
             </div>
+
             <div className="text-xs text-slate-600 space-y-1">
-               <div className="font-semibold text-[11px]">Schedule & classes</div>
+               <div className="font-semibold text-[11px]">Расписание и классы</div>
                <ul className="list-disc list-inside space-y-1">
                   <li>
-                     Preferred departure time: {preferredFrom}–{preferredTo}
+                     Рекомендованное время вылета: {preferredFrom}–{preferredTo}
                   </li>
-                  <li>Allowed classes: {allowedClasses.join(', ') || '—'}</li>
+                  <li>Допустимые классы: {allowedClasses.join(', ') || '—'}</li>
                   <li>
-                     Connections: {allowConnections ? 'Allowed' : 'Forbidden'}
-                     {allowConnections && ` • max ${maxConnectionTime} min`}
+                     Стыковки: {allowConnections ? 'разрешены' : 'запрещены'}
+                     {allowConnections && ` • не более ${maxConnectionTime} мин`}
                   </li>
                </ul>
             </div>
          </div>
 
-         {/* FLIGHT PRICE RULES */}
+         {/* ПРАВИЛА СТОИМОСТИ */}
          <div className="card p-4 space-y-3 text-sm">
             <div className="flex items-center gap-2">
                <Plane size={16} className="text-slate-600" />
-               <span className="font-semibold">Flight price rules</span>
+               <span className="font-semibold">Правила по стоимости перелёта</span>
             </div>
+
             <div className="grid md:grid-cols-3 gap-4 text-xs">
                <InfoBlock
-                  title="Soft limit (WARN threshold)"
-                  value={`${softLimit.toLocaleString('ru-RU')} KZT`}
-                  description="Above this price tickets are still bookable, but marked as WARN."
+                  title="Мягкий лимит (порог WARN)"
+                  value={`${softLimit.toLocaleString('ru-RU')} ₸`}
+                  description="Билеты выше этого значения отмечаются как WARN, но доступны для покупки."
                />
+
                <InfoBlock
-                  title="Block limit"
-                  value={`${blockLimit.toLocaleString('ru-RU')} KZT`}
-                  description="Above this price tickets are highlighted as BLOCK and cannot be purchased."
+                  title="Жёсткий лимит (BLOCK)"
+                  value={`${blockLimit.toLocaleString('ru-RU')} ₸`}
+                  description="Билеты дороже этого лимита блокируются и недоступны для оформления."
                />
+
                <div className="flex items-start gap-2 text-[11px] text-slate-600">
                   <Info size={14} className="mt-[2px]" />
                   <span>
-                     These thresholds are applied per one-way flight. For round trips, system evaluates segment prices separately or combined (depending on configuration).
+                     Лимиты применяются к одному сегменту. Для сложных маршрутов система может оценивать каждый сегмент отдельно или общую стоимость — зависит от конфигурации.
                   </span>
                </div>
             </div>
          </div>
 
-         {/* TIME WINDOW */}
+         {/* ВРЕМЯ ВЫЛЕТА */}
          <div className="card p-4 space-y-3 text-sm">
             <div className="flex items-center gap-2">
                <Clock size={16} className="text-slate-600" />
-               <span className="font-semibold">Preferred departure time window</span>
+               <span className="font-semibold">Предпочтительное окно вылета</span>
             </div>
+
             <div className="grid md:grid-cols-3 gap-4 text-xs">
                <InfoBlock
-                  title="Preferred window"
+                  title="Рекомендованное время"
                   value={`${preferredFrom} – ${preferredTo}`}
-                  description="Flights outside this window are marked as WARN due to schedule mismatch."
+                  description="Рейсы вне окна отмечаются как WARN из-за несоответствия расписанию."
                />
+
                <div className="text-[11px] text-slate-600 md:col-span-2">
-                  This helps steer employees towards business-friendly departure times (e.g. avoid night flights) without fully blocking out-of-window options.
+                  Это помогает направлять сотрудников к удобным времени вылета (например, избегать ночных рейсов), но не блокирует варианты полностью.
                </div>
             </div>
          </div>
 
-         {/* ALLOWED CLASSES & EXTRA RULES */}
+         {/* КЛАССЫ И ДОП. ПРАВИЛА */}
          <div className="card p-4 grid md:grid-cols-2 gap-4 text-sm">
+            {/* Allowed classes */}
             <div className="space-y-2">
                <div className="flex items-center gap-2">
                   <Check size={16} className="text-slate-600" />
-                  <span className="font-semibold text-sm">Allowed flight classes</span>
+                  <span className="font-semibold text-sm">Допустимые классы</span>
                </div>
+
                <div className="text-xs text-slate-600">
                   {allowedClasses.length ? (
                      <ul className="list-disc list-inside space-y-1">
@@ -120,53 +129,52 @@ export default function TravelPolicyPage() {
                         ))}
                      </ul>
                   ) : (
-                     <span>No classes explicitly allowed. In real setup this would block all flights.</span>
+                     <span>Не указано ни одного класса. В реальной системе это может блокировать все рейсы.</span>
                   )}
                </div>
             </div>
 
+            {/* Extra rules */}
             <div className="space-y-2">
                <div className="flex items-center gap-2">
                   <Ban size={16} className="text-slate-600" />
-                  <span className="font-semibold text-sm">Additional rules</span>
+                  <span className="font-semibold text-sm">Дополнительные правила</span>
                </div>
+
                <div className="text-xs text-slate-600 space-y-1">
                   <div>
-                     Connections: <strong>{allowConnections ? 'Allowed' : 'Forbidden'}</strong>
-                     {allowConnections && ` (max ${maxConnectionTime} minutes per connection)`}
+                     Стыковки: <strong>{allowConnections ? 'разрешены' : 'запрещены'}</strong>
+                     {allowConnections && ` (максимум ${maxConnectionTime} минут)`}
                   </div>
+
                   <div>
-                     Hand baggage only: <strong>{handBaggageOnly ? 'Required' : 'Not required'}</strong>
+                     Только ручная кладь: <strong>{handBaggageOnly ? 'да' : 'нет'}</strong>
                   </div>
+
                   <div className="text-[11px] text-slate-500 mt-1">
-                     These rules are applied on top of price and time logic and are reflected in flight badges and detailed tooltips in search results.
+                     Эти ограничения применяются дополнительно к стоимости и времени. В поиске отображаются в виде бейджей и подсказок.
                   </div>
                </div>
             </div>
          </div>
 
-         {/* LEGEND */}
+         {/* ЛЕГЕНДА */}
          <div className="card p-4 space-y-3 text-sm">
-            <div className="font-semibold">How flags are shown in search & booking</div>
+            <div className="font-semibold">Как отображаются флаги в поиске и оформлении</div>
+
             <div className="flex flex-col md:flex-row gap-3 text-xs">
-               <LegendItem color="bg-emerald-100 border-emerald-400" title="OK" text="Ticket fully fits policy by price, time window and class. Green badge in search results." />
-               <LegendItem
-                  color="bg-amber-100 border-amber-400"
-                  title="WARN"
-                  text="Ticket is allowed but violates soft price limit or preferred time window. Yellow badge with hint."
-               />
-               <LegendItem
-                  color="bg-red-100 border-red-400"
-                  title="BLOCK"
-                  text="Ticket violates hard block limit or forbidden class. Shown as blocked option; user cannot complete purchase."
-               />
+               <LegendItem color="bg-emerald-100 border-emerald-400" title="OK" text="Соответствует политике. Зеленый бейдж в результатах поиска." />
+
+               <LegendItem color="bg-amber-100 border-amber-400" title="WARN" text="Разрешено, но есть отклонение по времени или мягкому ценовому лимиту." />
+
+               <LegendItem color="bg-red-100 border-red-400" title="BLOCK" text="Не соответствует политике. Показывается заблокированным; оформить нельзя." />
             </div>
          </div>
       </div>
    )
 }
 
-/* SMALL PRESENTATIONAL COMPONENTS */
+/* ==== ВСПОМОГАТЕЛЬНЫЕ КОМПОНЕНТЫ ==== */
 
 function InfoBlock({ title, value, description }: { title: string; value: string; description: string }) {
    return (
@@ -180,6 +188,7 @@ function InfoBlock({ title, value, description }: { title: string; value: string
 
 function Dot({ color }: { color: 'emerald' | 'amber' | 'red' }) {
    const cls = color === 'emerald' ? 'bg-emerald-500' : color === 'amber' ? 'bg-amber-500' : 'bg-red-500'
+
    return <span className={`inline-block h-2 w-2 rounded-full ${cls}`} />
 }
 

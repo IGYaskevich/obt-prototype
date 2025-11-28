@@ -1,8 +1,10 @@
+// src/pages/TripsPage.tsx
 // @ts-nocheck
 import React, { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import SectionHeader from '../components/SectionHeader'
 import { Trip, useStore } from '../state/store'
-import { Filter, Plane, ShoppingCart, TrendingUp, FileDown, Download, FileSpreadsheet, FileText, Receipt } from 'lucide-react'
+import { Filter, Plane, ShoppingCart, TrendingUp, FileDown, Download, FileSpreadsheet, FileText, Receipt, BriefcaseBusiness, ArrowRight } from 'lucide-react'
 
 type StatusFilter = 'ALL' | 'COMPLETED' | 'IN_PROGRESS' | 'CANCELLED'
 type TypeFilter = 'ALL' | 'single' | 'basket'
@@ -11,9 +13,10 @@ type DocType = 'invoice' | 'act' | 'receipt'
 
 export default function TripsPage() {
    const { trips, employees, company } = useStore()
+   const nav = useNavigate()
 
-   // Мок, если стор пустой
-   const [demoTrips] = useState<Trip[]>([
+   // Мок, если стор пустой + связь с BusinessTrip через businessTripId
+   const [demoTrips] = useState<Array<Trip & { businessTripId?: string }>>([
       {
          id: 'T1',
          title: 'Almaty → Astana (business trip)',
@@ -22,6 +25,7 @@ export default function TripsPage() {
          status: 'COMPLETED',
          createdAt: '2025-11-10T09:00:00.000Z',
          employeeId: 'E1',
+         businessTripId: 'BT1',
       },
       {
          id: 'T2',
@@ -31,6 +35,7 @@ export default function TripsPage() {
          status: 'IN_PROGRESS',
          createdAt: '2025-11-12T11:00:00.000Z',
          employeeId: 'E2',
+         businessTripId: 'BT1',
       },
       {
          id: 'T4',
@@ -40,6 +45,7 @@ export default function TripsPage() {
          status: 'CANCELLED',
          createdAt: '2025-11-18T08:15:00.000Z',
          employeeId: 'E1',
+         businessTripId: 'BT1',
       },
       {
          id: 'T5',
@@ -49,6 +55,7 @@ export default function TripsPage() {
          status: 'COMPLETED',
          createdAt: '2025-10-25T10:00:00.000Z',
          employeeId: 'E2',
+         businessTripId: 'BT2',
       },
    ])
 
@@ -129,7 +136,7 @@ export default function TripsPage() {
       URL.revokeObjectURL(url)
    }
 
-   const handleDownloadSingle = (trip: Trip & { employeeName?: string }, docType: DocType) => {
+   const handleDownloadSingle = (trip: any, docType: DocType) => {
       if (trip.status !== 'COMPLETED') {
          alert('Documents are available only for completed trips.')
          return
@@ -140,13 +147,21 @@ export default function TripsPage() {
       alert(`Simulated: download ${label} for trip ${trip.id}`)
    }
 
-   const handleDownloadAll = (trip: Trip & { employeeName?: string }) => {
+   const handleDownloadAll = (trip: any) => {
       if (trip.status !== 'COMPLETED') {
          alert('Documents are available only for completed trips.')
          return
       }
 
       alert(`Simulated: download all documents (invoice + act + receipt) as ZIP for trip ${trip.id}`)
+   }
+
+   const openBusinessTrip = (trip: any) => {
+      if (!trip.businessTripId) {
+         alert('This booking is not linked to a business trip in demo data.')
+         return
+      }
+      nav(`/business-trips/${trip.businessTripId}`)
    }
 
    return (
@@ -272,11 +287,23 @@ export default function TripsPage() {
                         .sort((a, b) => b.createdDate.getTime() - a.createdDate.getTime())
                         .map(t => {
                            const docsAvailable = t.status === 'COMPLETED'
+                           const hasBusinessTrip = !!t.businessTripId
                            return (
                               <tr key={t.id} className="border-t border-slate-100">
                                  <td className="px-4 py-2 align-top text-xs text-slate-500">{t.createdDate.toLocaleDateString()}</td>
                                  <td className="px-4 py-2 align-top">
                                     <div className="font-medium">{t.title}</div>
+                                    {hasBusinessTrip && (
+                                       <button
+                                          type="button"
+                                          className="mt-1 inline-flex items-center gap-1 text-[11px] text-sky-700 hover:text-sky-900"
+                                          onClick={() => openBusinessTrip(t)}
+                                       >
+                                          <BriefcaseBusiness size={11} />
+                                          Open trip card
+                                          <ArrowRight size={11} />
+                                       </button>
+                                    )}
                                  </td>
                                  <td className="px-4 py-2 align-top">
                                     <div>{t.employeeName}</div>

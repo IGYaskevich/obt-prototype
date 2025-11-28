@@ -1,58 +1,38 @@
 import React, { createContext, useContext, useMemo, useState } from 'react'
 
-/* ========== TYPES ========== */
+/* === Базовые типы === */
 
 export type Tariff = 'FREE' | 'POSTPAY' | 'FLEX'
 export type PolicyLevel = 'OK' | 'WARN' | 'BLOCK'
 
-/**
- * Роли:
- * - ADMIN: настройки, тарифы, политики, сотрудники, всё управление.
- * - COORDINATOR: только операционная работа (поиск, бронирование, отчёты).
- */
 export type Role = 'ADMIN' | 'COORDINATOR'
+export type Permission = 'BUY' | 'BUILD_TRIP' | 'EXCHANGE' | 'VIEW_DOCS' | 'VIEW_ONLY' | 'MANAGE_SETTINGS' | 'MANAGE_TARIFFS'
 
-/**
- * Права:
- * - MANAGE_* — админские функции
- * - BUY / BUILD_TRIP — операционная работа
- * - VIEW_* — просмотровые вещи
- */
-export type Permission = 'MANAGE_SETTINGS' | 'MANAGE_POLICIES' | 'MANAGE_TARIFFS' | 'MANAGE_EMPLOYEES' | 'BUY' | 'BUILD_TRIP' | 'VIEW_DOCS' | 'VIEW_REPORTS'
+export type User = { email: string; companyName: string; role: Role }
 
-export type TravelPolicy = {
-   softLimit: number
-   blockLimit: number
-   preferredFrom: string // "HH:MM"
-   preferredTo: string // "HH:MM"
-   allowedClasses: string[] // ['ECONOMY', 'PREMIUM_ECONOMY', 'BUSINESS']
-   allowConnections: boolean
-   maxConnectionTime: number // minutes
-   handBaggageOnly: boolean
-}
+/* === Корпоративная карта компании === */
 
-export type User = {
-   email: string
-   companyName: string
-   role: Role
-}
+export type CorporateCardStatus = 'ACTIVE' | 'BLOCKED'
 
-/** Привязанная корпоративная карта компании */
 export type CorporateCard = {
-   brand: string // Visa Business, MasterCard Corporate и т.п.
-   last4: string // последние 4 цифры
-   holder: string // имя/название на карте
-   expiry: string // YYYY-MM
-   status: 'ACTIVE' | 'BLOCKED'
+   brand: string // Продукт/бренд карты, например "Visa Business"
+   last4: string // Последние 4 цифры
+   holder: string // Владелец карты
+   expiry: string // Срок действия, например "2027-08"
+   status: CorporateCardStatus
 }
+
+/* === Компания === */
 
 export type Company = {
    balance: number
    postpayLimit: number
    postpayDueDays: number
    tariff: Tariff
-   corporateCard?: CorporateCard
+   corporateCard?: CorporateCard | null
 }
+
+/* === Поиск/перелёты === */
 
 export type Flight = {
    id: string
@@ -68,19 +48,7 @@ export type Flight = {
    changeable: boolean
 }
 
-/**
- * Статусы бронирования:
- * - COMPLETED: выкуплено / завершено
- * - IN_PROGRESS: пользователь в процессе
- * - FLAGGED: выбивается из политики (без "аппрува")
- * - CANCELLED: отменено
- */
-export type BookingStatus = 'COMPLETED' | 'IN_PROGRESS' | 'FLAGGED' | 'CANCELLED'
-
-/**
- * Тип бронирования:
- * Оставляем только 'single' как одиночную бронь.
- */
+export type BookingStatus = 'COMPLETED' | 'IN_PROGRESS' | 'CANCELLED'
 export type BookingType = 'single'
 
 export type Trip = {
@@ -93,18 +61,18 @@ export type Trip = {
    employeeId?: string
 }
 
-/** Employee documents */
+/* === Документы сотрудника === */
+
 export type EmployeeDocumentType = 'PASSPORT' | 'ID_CARD' | 'VISA'
 export type EmployeeDocumentStatus = 'VALID' | 'EXPIRED' | 'MISSING'
 
 export type EmployeeDocument = {
    type: EmployeeDocumentType
    number: string
-   expirationDate: string // ISO YYYY-MM-DD
+   expirationDate: string // ISO date
    status: EmployeeDocumentStatus
 }
 
-/** Сотрудник: только настройки + документы */
 export type Employee = {
    id: string
    name: string
@@ -114,12 +82,71 @@ export type Employee = {
    documents: EmployeeDocument[]
 }
 
-/* ========== STORE SHAPE ========== */
+/* === Тревел-политика компании === */
+
+export type TravelPolicyConfig = {
+   softLimit: number // с какой суммы начинаем WARN
+   blockLimit: number // с какой суммы BLOCK
+   preferredFrom: string // рекомендованное время вылета от (HH:mm)
+   preferredTo: string // рекомендованное время вылета до (HH:mm)
+   allowedClasses: string[] // разрешённые классы (ECONOMY, BUSINESS и т.п.)
+   allowConnections: boolean // разрешены стыковки
+   maxConnectionTime: number // макс. время стыковки в минутах
+   handBaggageOnly: boolean // только ручная кладь
+}
+
+/* === Штрафы === */
+
+export type PenaltyType = 'POLICY_VIOLATION' | 'NO_SHOW' | 'PAID_CANCELLATION' | 'LATE_BOOKING' | 'OUT_OF_POLICY_TIME'
+
+export type PenaltyStatus = 'UNPAID' | 'PAID'
+
+export type Penalty = {
+   id: string
+   employeeId: string
+   employeeName: string
+   type: PenaltyType
+   amount: number
+   currency: string
+   date: string // ISO date (YYYY-MM-DD)
+   status: PenaltyStatus
+   reason?: string
+}
+
+/* === Командировки (Business Trip) === */
+
+export type ServiceKind = 'FLIGHT' | 'RAIL' | 'HOTEL' | 'OTHER'
+
+export type BusinessTripService = {
+   id: string
+   kind: ServiceKind
+   title: string
+   from?: string
+   to?: string
+   startDateTime: string // ISO
+   endDateTime: string // ISO
+   supplier: string
+   amount: number
+   currency: string
+}
+
+export type BusinessTripStatus = 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'
+
+export type BusinessTrip = {
+   id: string
+   name: string
+   ownerEmployeeId: string
+   status: BusinessTripStatus
+   startDate: string // YYYY-MM-DD
+   endDate: string // YYYY-MM-DD
+   services: BusinessTripService[]
+}
+
+/* === Store === */
 
 type Store = {
    user: User | null
    company: Company | null
-
    setTariff: (t: Tariff) => void
    login: (email: string, t: Tariff) => void
    logout: () => void
@@ -129,33 +156,37 @@ type Store = {
    selectFlight: (id: string) => void
 
    trips: Trip[]
-   addTrip: (trip: Omit<Trip, 'id' | 'createdAt' | 'type'>) => void
-
-   travelPolicy: TravelPolicy
-   updateTravelPolicy: (patch: Partial<TravelPolicy>) => void
+   addTrip: (trip: Omit<Trip, 'id' | 'createdAt'>) => void
 
    employees: Employee[]
-   addEmployee: (e: Omit<Employee, 'id' | 'documents'>) => void
+   addEmployee: (e: Omit<Employee, 'id'>) => void
    updateEmployeeRole: (id: string, role: Role) => void
    removeEmployee: (id: string) => void
-
-   /** Документы сотрудника */
-   addEmployeeDocument: (employeeId: string, doc: Omit<EmployeeDocument, 'status'>) => void
-   removeEmployeeDocument: (employeeId: string, docNumber: string) => void
-
-   /** Корпоративная карта компании */
-   updateCorporateCard: (card: CorporateCard | null) => void
-
    hasPermission: (p: Permission) => boolean
 
-   /** Helpers */
+   /** Документы сотрудников */
    getEmployeeById: (id: string) => Employee | undefined
    employeeHasValidDocs: (id: string) => boolean
+
+   /** Тревел-политика */
+   travelPolicy: TravelPolicyConfig
+   updateTravelPolicy: (cfg: Partial<TravelPolicyConfig>) => void
+
+   /** Штрафы */
+   penalties: Penalty[]
+   addPolicyViolationPenalty: (args: { employeeId: string; amount: number; reason?: string }) => void
+
+   /** Командировки */
+   businessTrips: BusinessTrip[]
+   getBusinessTripById: (id: string) => BusinessTrip | undefined
+
+   /** Корпоративная карта */
+   updateCorporateCard: (card: CorporateCard | null) => void
 }
 
-/* ========== INTERNALS ========== */
-
 const StoreCtx = createContext<Store | null>(null)
+
+/* === Моки перелётов === */
 
 const seedFlights: Flight[] = [
    {
@@ -199,39 +230,12 @@ const seedFlights: Flight[] = [
    },
 ]
 
-function computeDocumentStatus(expirationDate: string): EmployeeDocumentStatus {
-   if (!expirationDate) return 'MISSING'
-   const today = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
-   return expirationDate < today ? 'EXPIRED' : 'VALID'
-}
-
-/* ========== PROVIDER ========== */
-
 export function StoreProvider({ children }: { children: React.ReactNode }) {
    const [user, setUser] = useState<User | null>(null)
    const [company, setCompany] = useState<Company | null>(null)
    const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null)
 
-   const [trips, setTrips] = useState<Trip[]>([
-      {
-         id: 'T1',
-         title: 'Almaty → Astana (Ignat Admin)',
-         total: 42000,
-         type: 'single',
-         status: 'COMPLETED',
-         createdAt: '2025-11-20T10:00:00Z',
-         employeeId: 'E1',
-      },
-      {
-         id: 'T2',
-         title: 'Almaty → Astana (Mariya Coordinator)',
-         total: 51000,
-         type: 'single',
-         status: 'FLAGGED',
-         createdAt: '2025-11-22T07:30:00Z',
-         employeeId: 'E2',
-      },
-   ])
+   const [trips, setTrips] = useState<Trip[]>([])
 
    const [employees, setEmployees] = useState<Employee[]>([
       {
@@ -241,34 +245,131 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
          role: 'ADMIN',
          department: 'Finance',
          documents: [
-            { type: 'PASSPORT', number: 'N1234567', expirationDate: '2028-05-10', status: 'VALID' },
-            { type: 'ID_CARD', number: 'ID998877', expirationDate: '2030-01-01', status: 'VALID' },
+            {
+               type: 'PASSPORT',
+               number: 'N1234567',
+               expirationDate: '2028-05-10',
+               status: 'VALID',
+            },
+            {
+               type: 'ID_CARD',
+               number: 'ID998877',
+               expirationDate: '2030-01-01',
+               status: 'VALID',
+            },
          ],
       },
       {
          id: 'E2',
          name: 'Mariya Coordinator',
-         email: 'coordinator@company.com',
+         email: 'booker@company.com',
          role: 'COORDINATOR',
          department: 'Operations',
-         documents: [{ type: 'PASSPORT', number: 'K7654321', expirationDate: '2026-11-01', status: 'VALID' }],
+         documents: [
+            {
+               type: 'PASSPORT',
+               number: 'K7654321',
+               expirationDate: '2024-01-01',
+               status: 'EXPIRED',
+            },
+         ],
+      },
+      {
+         id: 'E3',
+         name: 'Daniyar Manager',
+         email: 'manager@company.com',
+         role: 'COORDINATOR',
+         department: 'Sales',
+         documents: [],
       },
    ])
 
-   /* ----- Trips ----- */
+   /** Тревел-политика по умолчанию */
+   const [travelPolicy, setTravelPolicy] = useState<TravelPolicyConfig>({
+      softLimit: 60000,
+      blockLimit: 120000,
+      preferredFrom: '07:00',
+      preferredTo: '22:00',
+      allowedClasses: ['ECONOMY'],
+      allowConnections: true,
+      maxConnectionTime: 180,
+      handBaggageOnly: false,
+   })
 
-   const addTrip = (trip: Omit<Trip, 'id' | 'createdAt' | 'type'>) =>
+   /** Штрафы */
+   const [penalties, setPenalties] = useState<Penalty[]>([])
+
+   /** Командировки (мок) */
+   const [businessTrips] = useState<BusinessTrip[]>([
+      {
+         id: 'BT1',
+         name: 'Командировка: Алматы → Астана (встреча с клиентом)',
+         ownerEmployeeId: 'E1',
+         status: 'COMPLETED',
+         startDate: '2025-11-10',
+         endDate: '2025-11-12',
+         services: [
+            {
+               id: 'S1',
+               kind: 'FLIGHT',
+               title: 'Алматы → Астана (авиа)',
+               from: 'Almaty',
+               to: 'Astana',
+               startDateTime: '2025-11-10T09:00:00.000Z',
+               endDateTime: '2025-11-10T11:00:00.000Z',
+               supplier: 'Air Astana',
+               amount: 42000,
+               currency: 'KZT',
+            },
+            {
+               id: 'S2',
+               kind: 'HOTEL',
+               title: 'Отель в Астане (2 ночи)',
+               startDateTime: '2025-11-10T14:00:00.000Z',
+               endDateTime: '2025-11-12T10:00:00.000Z',
+               supplier: 'Hotel Astana Center',
+               amount: 68000,
+               currency: 'KZT',
+            },
+         ],
+      },
+      {
+         id: 'BT2',
+         name: 'Командировка: Алматы → Стамбул (международная)',
+         ownerEmployeeId: 'E2',
+         status: 'IN_PROGRESS',
+         startDate: '2025-10-25',
+         endDate: '2025-10-30',
+         services: [
+            {
+               id: 'S3',
+               kind: 'FLIGHT',
+               title: 'Алматы → Стамбул (авиа)',
+               from: 'Almaty',
+               to: 'Istanbul',
+               startDateTime: '2025-10-25T10:00:00.000Z',
+               endDateTime: '2025-10-25T15:00:00.000Z',
+               supplier: 'Turkish Airlines',
+               amount: 250000,
+               currency: 'KZT',
+            },
+         ],
+      },
+   ])
+
+   /* === Trips === */
+
+   const addTrip = (trip: Omit<Trip, 'id' | 'createdAt'>) =>
       setTrips(prev => [
          {
             ...trip,
             id: crypto.randomUUID(),
             createdAt: new Date().toISOString(),
-            type: 'single',
          },
          ...prev,
       ])
 
-   /* ----- Auth / company ----- */
+   /* === Auth / компания === */
 
    const login = (email: string, tariff: Tariff) => {
       const role: Role = email.includes('admin') ? 'ADMIN' : 'COORDINATOR'
@@ -279,7 +380,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
          postpayLimit: 1500000,
          postpayDueDays: 14,
          tariff,
-         corporateCard: undefined, // в реальном продукте появится после первичной регистрации
+         corporateCard: null,
       })
    }
 
@@ -291,85 +392,36 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
    const setTariff = (t: Tariff) => setCompany(c => (c ? { ...c, tariff: t } : c))
 
-   /* ----- Flights ----- */
+   /* === Перелёты === */
 
    const selectFlight = (id: string) => setSelectedFlight(seedFlights.find(f => f.id === id) || null)
 
-   /* ----- Employees ----- */
+   /* === Сотрудники === */
 
-   const addEmployee = (e: Omit<Employee, 'id' | 'documents'>) =>
-      setEmployees(prev => [
-         {
-            ...e,
-            id: crypto.randomUUID(),
-            documents: [],
-         },
-         ...prev,
-      ])
+   const addEmployee = (e: Omit<Employee, 'id'>) => setEmployees(prev => [{ ...e, id: crypto.randomUUID(), documents: e.documents ?? [] }, ...prev])
 
-   const updateEmployeeRole = (id: string, role: Role) => setEmployees(prev => prev.map(emp => (emp.id === id ? { ...emp, role } : emp)))
+   const updateEmployeeRole = (id: string, role: Role) => setEmployees(prev => prev.map(e => (e.id === id ? { ...e, role } : e)))
 
-   const removeEmployee = (id: string) => setEmployees(prev => prev.filter(emp => emp.id !== id))
-
-   const addEmployeeDocument = (employeeId: string, doc: Omit<EmployeeDocument, 'status'>) => {
-      setEmployees(prev =>
-         prev.map(emp =>
-            emp.id === employeeId
-               ? {
-                    ...emp,
-                    documents: [
-                       ...emp.documents,
-                       {
-                          ...doc,
-                          status: computeDocumentStatus(doc.expirationDate),
-                       },
-                    ],
-                 }
-               : emp,
-         ),
-      )
-   }
-
-   const removeEmployeeDocument = (employeeId: string, docNumber: string) => {
-      setEmployees(prev =>
-         prev.map(emp =>
-            emp.id === employeeId
-               ? {
-                    ...emp,
-                    documents: emp.documents.filter(d => d.number !== docNumber),
-                 }
-               : emp,
-         ),
-      )
-   }
-
-   /* ----- Corporate card (company-level) ----- */
-
-   const updateCorporateCard = (card: CorporateCard | null) => {
-      setCompany(c =>
-         c
-            ? {
-                 ...c,
-                 corporateCard: card ?? undefined,
-              }
-            : c,
-      )
-   }
-
-   /* ----- Permissions / helpers ----- */
+   const removeEmployee = (id: string) => setEmployees(prev => prev.filter(e => e.id !== id))
 
    const hasPermission = (p: Permission) => {
       if (!user) return false
       const r = user.role
 
       if (r === 'ADMIN') {
+         // админ может всё
          return true
       }
 
       if (r === 'COORDINATOR') {
-         if (p === 'BUY' || p === 'BUILD_TRIP' || p === 'VIEW_DOCS' || p === 'VIEW_REPORTS') {
-            return true
-         }
+         // координатор: покупка и работа с системой, но без настроек
+         if (p === 'VIEW_ONLY') return true
+         if (p === 'VIEW_DOCS') return true
+         if (p === 'BUY') return true
+         if (p === 'BUILD_TRIP') return true
+         if (p === 'EXCHANGE') return false
+         if (p === 'MANAGE_SETTINGS') return false
+         if (p === 'MANAGE_TARIFFS') return false
          return false
       }
 
@@ -378,28 +430,63 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
    const getEmployeeById = (id: string) => employees.find(e => e.id === id)
 
-   // Нужно хотя бы 1 VALID паспорт или ID.
+   // Простое правило: нужен хотя бы 1 VALID паспорт или ID.
    const employeeHasValidDocs = (id: string) => {
       const e = getEmployeeById(id)
       if (!e) return false
-      return e.documents.some(d => (d.type === 'PASSPORT' || d.type === 'ID_CARD') && computeDocumentStatus(d.expirationDate) === 'VALID')
+      return e.documents.some(d => d.status === 'VALID' && (d.type === 'PASSPORT' || d.type === 'ID_CARD'))
    }
 
-   const [travelPolicy, setTravelPolicy] = useState<TravelPolicy>({
-      softLimit: 80000,
-      blockLimit: 120000,
-      preferredFrom: '07:00',
-      preferredTo: '21:00',
-      allowedClasses: ['ECONOMY'],
-      allowConnections: true,
-      maxConnectionTime: 180,
-      handBaggageOnly: false,
-   })
+   /* === Тревел-политика === */
 
-   const updateTravelPolicy = (patch: Partial<TravelPolicy>) => {
-      setTravelPolicy(prev => ({ ...prev, ...patch }))
+   const updateTravelPolicy = (cfg: Partial<TravelPolicyConfig>) => {
+      setTravelPolicy(prev => ({ ...prev, ...cfg }))
    }
-   /* ----- Memoized value ----- */
+
+   /* === Штрафы === */
+
+   const addPolicyViolationPenalty = (args: { employeeId: string; amount: number; reason?: string }) => {
+      const { employeeId, amount, reason } = args
+      const emp = getEmployeeById(employeeId)
+      const employeeName = emp?.name ?? 'Unknown employee'
+
+      const today = new Date()
+      const iso = today.toISOString().slice(0, 10) // YYYY-MM-DD
+
+      setPenalties(prev => [
+         ...prev,
+         {
+            id: crypto.randomUUID(),
+            employeeId,
+            employeeName,
+            type: 'POLICY_VIOLATION',
+            amount,
+            currency: 'KZT',
+            date: iso,
+            status: 'UNPAID',
+            reason,
+         },
+      ])
+   }
+
+   /* === Командировки === */
+
+   const getBusinessTripById = (id: string) => businessTrips.find(bt => bt.id === id)
+
+   /* === Корпоративная карта === */
+
+   const updateCorporateCard = (card: CorporateCard | null) => {
+      setCompany(prev =>
+         prev
+            ? {
+                 ...prev,
+                 corporateCard: card,
+              }
+            : prev,
+      )
+   }
+
+   /* === value === */
 
    const value = useMemo<Store>(
       () => ({
@@ -420,12 +507,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
          addEmployee,
          updateEmployeeRole,
          removeEmployee,
-
-         addEmployeeDocument,
-         removeEmployeeDocument,
-
-         updateCorporateCard,
-
          hasPermission,
 
          getEmployeeById,
@@ -433,14 +514,20 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
          travelPolicy,
          updateTravelPolicy,
+
+         penalties,
+         addPolicyViolationPenalty,
+
+         businessTrips,
+         getBusinessTripById,
+
+         updateCorporateCard,
       }),
-      [user, company, selectedFlight, trips, employees],
+      [user, company, selectedFlight, trips, employees, travelPolicy, penalties, businessTrips],
    )
 
    return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>
 }
-
-/* ========== HOOK ========== */
 
 export function useStore() {
    const ctx = useContext(StoreCtx)

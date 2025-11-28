@@ -12,36 +12,16 @@ export function QuickActionMenu() {
    const hotkey = isMac ? '⇧ A' : 'Ctrl A'
 
    const actions = [
-      {
-         label: 'Купить авиабилет',
-         icon: Plane,
-         action: () => nav('/search?type=avia'),
-      },
-      {
-         label: 'Купить ЖД билет',
-         icon: Train,
-         action: () => nav('/search?type=rail'),
-      },
-      {
-         label: 'Найти отель',
-         icon: Building2,
-         action: () => nav('/search?type=hotel'),
-      },
-      {
-         label: 'Добавить сотрудника',
-         icon: Users,
-         action: () => nav('/employees?add=1'),
-      },
-      {
-         label: 'Скачать документы',
-         icon: Download,
-         action: () => nav('/documents?download=all'),
-      },
-      {
-         label: 'Открыть поддержку',
-         icon: MessageSquare,
-         action: () => nav('/support'),
-      },
+      { label: 'Купить авиабилет', icon: Plane, action: () => nav('/search?type=avia') },
+      { label: 'Купить ЖД билет', icon: Train, action: () => nav('/search?type=rail') },
+      { label: 'Найти отель', icon: Building2, action: () => nav('/search?type=hotel') },
+
+      // ✔ здесь открываем МОДАЛКУ вместо перехода на новую страницу
+      { label: 'Добавить сотрудника', icon: Users, action: () => setAddOpen(true) },
+
+      { label: 'Скачать документы', icon: Download, action: () => nav('/documents?download=all') },
+      // { label: 'Перейти в отчёты', icon: BarChart2, action: () => nav('/reports') },
+      { label: 'Поддержка', icon: MessageSquare, action: () => nav('/support') },
    ]
 
    /* ---------------------- HOTKEY: Shift + A ---------------------- */

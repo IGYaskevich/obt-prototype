@@ -9,8 +9,8 @@ export default function CompanySettingsPage() {
    if (!company) {
       return (
          <div className="space-y-4">
-            <SectionHeader title="Company settings" subtitle="Company profile, documents and payment configuration." />
-            <div className="card p-4 text-sm text-red-600">Company context is not available. Please log in again.</div>
+            <SectionHeader title="Настройки компании" subtitle="Профиль компании, документы и методы оплаты." />
+            <div className="card p-4 text-sm text-red-600">Контекст компании недоступен. Пожалуйста, выполните вход заново.</div>
          </div>
       )
    }
@@ -18,17 +18,21 @@ export default function CompanySettingsPage() {
    const canManageSettings = hasPermission('MANAGE_SETTINGS')
    const canManageTariff = hasPermission('MANAGE_TARIFFS') || canManageSettings
 
-   /* ---- COMPANY PROFILE (local mocks) ---- */
+   /* --------------------------
+    * 1. Профиль компании
+    * -------------------------- */
 
    const [profileName, setProfileName] = useState(user?.companyName || 'Demo Company LLC')
    const [profileBin, setProfileBin] = useState('123456789012')
-   const [profileAddress, setProfileAddress] = useState('Almaty, Kazakhstan')
+   const [profileAddress, setProfileAddress] = useState('Алматы, Казахстан')
 
    const handleSaveProfile = () => {
-      alert(`Saving company profile (mock):\nName: ${profileName}\nBIN: ${profileBin}\nAddress: ${profileAddress}`)
+      alert(`Сохранение профиля компании (демо):\nНазвание: ${profileName}\nБИН: ${profileBin}\nАдрес: ${profileAddress}`)
    }
 
-   /* ---- PAYMENT METHODS (config, local) ---- */
+   /* --------------------------
+    * 2. Методы оплаты (локально)
+    * -------------------------- */
 
    const [enableCompanyBalance, setEnableCompanyBalance] = useState(true)
    const [enablePostpay, setEnablePostpay] = useState(company.tariff !== 'FREE')
@@ -38,43 +42,46 @@ export default function CompanySettingsPage() {
    const handleSavePaymentMethods = () => {
       alert(
          [
-            'Saving payment methods (mock):',
-            `• Company balance: ${enableCompanyBalance ? 'ON' : 'OFF'}`,
-            `• Postpay: ${enablePostpay ? 'ON' : 'OFF'}`,
-            `• Corporate card: ${enableCorpCard ? 'ON' : 'OFF'}`,
-            `• Personal card: ${enablePersonalCard ? 'ON' : 'OFF'}`,
+            'Сохранение методов оплаты:',
+            `• Баланс компании: ${enableCompanyBalance ? 'Включён' : 'Отключён'}`,
+            `• Postpay (отсрочка): ${enablePostpay ? 'Включён' : 'Отключён'}`,
+            `• Корпоративная карта: ${enableCorpCard ? 'Включена' : 'Отключена'}`,
+            `• Личная карта: ${enablePersonalCard ? 'Разрешена' : 'Запрещена'}`,
          ].join('\n'),
       )
    }
 
-   /* ---- DOCUMENTS & INVOICES ---- */
+   /* -----------------------------
+    * 3. Документы и закрывающие
+    * ----------------------------- */
 
    const [docEmail, setDocEmail] = useState(`${user?.email?.split('@')[0] || 'finance'}@demo.com`)
    const [docLanguage, setDocLanguage] = useState<'ru' | 'en'>('ru')
    const [autoSendDocs, setAutoSendDocs] = useState(true)
 
    const handleSaveDocsSettings = () => {
-      alert(`Saving documents settings:\nEmail: ${docEmail}\nAuto-send: ${autoSendDocs}\nLanguage: ${docLanguage}`)
+      alert(`Сохранение настроек документов:\nEmail: ${docEmail}\nАвто-отправка: ${autoSendDocs}\nЯзык: ${docLanguage}`)
    }
 
-   /* ---- DEPARTMENTS & COST CENTERS (local) ---- */
+   /* --------------------------
+    * 4. Департаменты и центры затрат
+    * -------------------------- */
 
-   const [departments, setDepartments] = useState<string[]>(['Finance', 'Sales', 'Operations'])
+   const [departments, setDepartments] = useState<string[]>(['Финансы', 'Продажи', 'Операции'])
    const [newDept, setNewDept] = useState('')
 
    const [costCenters, setCostCenters] = useState<{ code: string; name: string }[]>([
-      { code: 'CC-001', name: 'Kazakhstan HQ' },
-      { code: 'CC-010', name: 'Sales team' },
+      { code: 'CC-001', name: 'Штаб-квартира Казахстан' },
+      { code: 'CC-010', name: 'Отдел продаж' },
    ])
+
    const [newCCCode, setNewCCCode] = useState('')
    const [newCCName, setNewCCName] = useState('')
 
    const addDepartment = () => {
       const v = newDept.trim()
       if (!v) return
-      if (!departments.includes(v)) {
-         setDepartments(prev => [...prev, v])
-      }
+      if (!departments.includes(v)) setDepartments(prev => [...prev, v])
       setNewDept('')
    }
 
@@ -86,6 +93,7 @@ export default function CompanySettingsPage() {
       const code = newCCCode.trim()
       const name = newCCName.trim()
       if (!code || !name) return
+
       setCostCenters(prev => [...prev, { code, name }])
       setNewCCCode('')
       setNewCCName('')
@@ -95,7 +103,9 @@ export default function CompanySettingsPage() {
       setCostCenters(prev => prev.filter(cc => cc.code !== code))
    }
 
-   /* ---- NOTIFICATIONS & ALERTS (local) ---- */
+   /* --------------------------
+    * 5. Уведомления
+    * -------------------------- */
 
    const [notifyTicketBooked, setNotifyTicketBooked] = useState(true)
    const [notifyPolicyBreach, setNotifyPolicyBreach] = useState(true)
@@ -105,42 +115,43 @@ export default function CompanySettingsPage() {
    const handleSaveNotifications = () => {
       alert(
          [
-            'Saving notifications (mock):',
-            `• Ticket booked: ${notifyTicketBooked ? 'ON' : 'OFF'}`,
-            `• Policy breach: ${notifyPolicyBreach ? 'ON' : 'OFF'}`,
-            `• Postpay due reminders: ${notifyPostpayDue ? 'ON' : 'OFF'}`,
-            `• Weekly digest: ${notifyWeeklyDigest ? 'ON' : 'OFF'}`,
+            'Сохранение уведомлений:',
+            `• Бронирование билета: ${notifyTicketBooked ? 'ON' : 'OFF'}`,
+            `• Нарушение политики: ${notifyPolicyBreach ? 'ON' : 'OFF'}`,
+            `• Напоминание Postpay: ${notifyPostpayDue ? 'ON' : 'OFF'}`,
+            `• Еженедельный дайджест: ${notifyWeeklyDigest ? 'ON' : 'OFF'}`,
          ].join('\n'),
       )
    }
 
-   /* ---- TARIFF MANAGEMENT ---- */
-
+   /* --------------------------
+    * 6. Управление тарифом
+    * -------------------------- */
    const handleChangeTariff = (t: Tariff) => {
       if (!canManageTariff) return
       setTariff(t)
-      if (t === 'FREE') {
-         setEnablePostpay(false)
-      }
-      alert(`Tariff switched to ${t} (mock)`)
+      if (t === 'FREE') setEnablePostpay(false)
+      alert(`Тариф изменён на: ${t} (демо)`)
    }
 
-   /* ---- CORPORATE CARD (using updateCorporateCard) ---- */
+   /* --------------------------
+    * 7. Корпоративная карта
+    * -------------------------- */
 
    const [cardBrand, setCardBrand] = useState(company.corporateCard?.brand ?? 'Visa Business')
    const [cardLast4, setCardLast4] = useState(company.corporateCard?.last4 ?? '4242')
-   const [cardHolder, setCardHolder] = useState(company.corporateCard?.holder ?? (user?.companyName || 'Demo Company LLC'))
+   const [cardHolder, setCardHolder] = useState(company.corporateCard?.holder ?? user?.companyName ?? 'Demo Company LLC')
    const [cardExpiry, setCardExpiry] = useState(company.corporateCard?.expiry ?? '2027-08')
    const [cardStatus, setCardStatus] = useState<'ACTIVE' | 'BLOCKED'>(company.corporateCard?.status ?? 'ACTIVE')
 
    const handleBindCard = () => {
       if (!canManageSettings) return
-      if (!cardBrand.trim() || !cardLast4.trim() || !cardHolder.trim() || !cardExpiry.trim()) {
-         alert('Please fill all card fields')
+      if (!cardBrand.trim() || !cardLast4.trim() || !cardHolder.trim()) {
+         alert('Заполните все поля карты')
          return
       }
       if (cardLast4.length !== 4 || !/^\d{4}$/.test(cardLast4)) {
-         alert('Please enter last 4 digits of the card')
+         alert('Введите последние 4 цифры карты')
          return
       }
 
@@ -152,16 +163,18 @@ export default function CompanySettingsPage() {
          status: cardStatus,
       })
 
-      alert('Corporate card is linked (simulated). In real product it would be done via PSP during registration/onboarding.')
+      alert('Корпоративная карта привязана (симуляция).')
    }
 
    const handleUnbindCard = () => {
       if (!canManageSettings) return
-      if (!window.confirm('Remove corporate card binding for this company?')) return
+      if (!window.confirm('Удалить корпоративную карту?')) return
       updateCorporateCard(null)
    }
 
-   /* ---- TRAVEL POLICY SETTINGS (connected to store.travelPolicy) ---- */
+   /* --------------------------
+    * 8. Тревел-политика
+    * -------------------------- */
 
    const [policySoftLimit, setPolicySoftLimit] = useState(travelPolicy.softLimit)
    const [policyBlockLimit, setPolicyBlockLimit] = useState(travelPolicy.blockLimit)
@@ -190,171 +203,178 @@ export default function CompanySettingsPage() {
 
       alert(
          [
-            'Travel policy saved (simulated):',
-            `• Soft limit: ${policySoftLimit}`,
-            `• Block limit: ${policyBlockLimit}`,
-            `• Preferred window: ${policyPreferredFrom}–${policyPreferredTo}`,
-            `• Allowed classes: ${policyAllowedClasses.join(', ')}`,
-            `• Allow connections: ${policyAllowConnections}`,
-            `• Max connection time: ${policyMaxConnectionTime} min`,
-            `• Hand baggage only: ${policyHandBaggageOnly}`,
+            'Тревел-политика сохранена:',
+            `• Soft-limit: ${policySoftLimit}`,
+            `• Block-limit: ${policyBlockLimit}`,
+            `• Окно вылета: ${policyPreferredFrom}–${policyPreferredTo}`,
+            `• Классы: ${policyAllowedClasses.join(', ')}`,
+            `• Стыковки: ${policyAllowConnections}`,
+            `• Макс. стыковка: ${policyMaxConnectionTime} мин`,
+            `• Только ручная кладь: ${policyHandBaggageOnly}`,
          ].join('\n'),
       )
    }
 
+   /* -----------------------------
+    * UI РЕНДЕРИНГ
+    * ----------------------------- */
+
    return (
       <div className="space-y-6">
-         <SectionHeader title="Company settings" subtitle="Configure company profile, payment methods, travel policy, documents, notifications and tariff." />
+         <SectionHeader title="Настройки компании" subtitle="Профиль компании, методы оплаты, тревел-политика, документы, уведомления и тариф." />
 
-         {/* 1. COMPANY PROFILE */}
+         {/* 1. ПРОФИЛЬ */}
          <div className="card p-4 grid md:grid-cols-3 gap-4 text-sm">
             <div className="flex items-start gap-2">
-               <Building2 size={18} className="mt-1 text-slate-500" />
+               <Building2 size={18} className="mt-[2px] text-slate-600" />
                <div>
-                  <div className="font-semibold mb-2">Company profile</div>
+                  <div className="font-semibold mb-2">Профиль компании</div>
                   <div className="space-y-2 text-xs">
-                     <Field label="Company name" value={profileName} onChange={setProfileName} disabled={!canManageSettings} />
-                     <Field label="BIN / Tax ID" value={profileBin} onChange={setProfileBin} disabled={!canManageSettings} />
-                     <Field label="Legal address" value={profileAddress} onChange={setProfileAddress} disabled={!canManageSettings} />
+                     <Field label="Название компании" value={profileName} onChange={setProfileName} disabled={!canManageSettings} />
+                     <Field label="БИН / ИНН" value={profileBin} onChange={setProfileBin} disabled={!canManageSettings} />
+                     <Field label="Юридический адрес" value={profileAddress} onChange={setProfileAddress} disabled={!canManageSettings} />
                   </div>
                </div>
             </div>
 
             <div className="text-xs text-slate-600 flex items-start gap-2">
-               <Info size={14} className="mt-[2px] text-slate-500" />
-               <span>Company profile is used across invoices, acts and internal reports. In this prototype we keep it local, without real backend updates.</span>
+               <Info size={14} className="mt-[2px]" />
+               <span>Профиль используется в счетах, актах и внутренних отчётах. В прототипе сохраняется только локально.</span>
             </div>
 
             <div className="flex flex-col justify-between text-xs">
                <div className="text-slate-600">
                   <div>
-                     Current tariff: <span className="badge-soft">{company.tariff}</span>
+                     Текущий тариф: <span className="badge-soft">{company.tariff}</span>
                   </div>
-                  <div className="mt-1">Balance: {company.balance.toLocaleString('ru-RU')} KZT</div>
+                  <div className="mt-1">Баланс: {company.balance.toLocaleString('ru-RU')} KZT</div>
                   <div className="mt-1">
-                     Postpay limit: {company.postpayLimit.toLocaleString('ru-RU')} KZT • {company.postpayDueDays} days due
+                     Лимит Postpay: {company.postpayLimit.toLocaleString('ru-RU')} KZT • {company.postpayDueDays} дней до оплаты
                   </div>
                </div>
+
                <div className="flex justify-end mt-3">
-                  <button className="btn-primary flex items-center gap-1 text-xs disabled:opacity-50" onClick={handleSaveProfile} disabled={!canManageSettings}>
+                  <button className="btn-primary flex items-center gap-1 text-xs" onClick={handleSaveProfile} disabled={!canManageSettings}>
                      <Save size={14} />
-                     Save profile
+                     Сохранить профиль
                   </button>
                </div>
             </div>
          </div>
 
-         {/* 2. PAYMENT METHODS + CORPORATE CARD */}
+         {/* 2. МЕТОДЫ ОПЛАТЫ */}
          <div className="card p-4 grid md:grid-cols-2 gap-4 text-sm">
-            {/* 2.1 Payment methods toggles */}
+            {/* Левая часть */}
             <div className="space-y-3">
                <div className="flex items-center justify-between">
-                  <h2 className="font-semibold text-sm flex items-center gap-2">
+                  <h2 className="font-semibold flex items-center gap-2">
                      <CreditCard size={16} className="text-slate-600" />
-                     Payment methods
+                     Методы оплаты
                   </h2>
-                  {!canManageSettings && <span className="text-[11px] text-slate-400">Read-only for coordinator</span>}
+                  {!canManageSettings && <span className="text-[11px] text-slate-400">Только просмотр</span>}
                </div>
+
                <div className="space-y-2 text-xs">
                   <ToggleRow
-                     label="Company balance"
-                     description="Use pre-loaded company balance for purchases. Recommended for Free and Flex tariffs."
+                     label="Баланс компании"
+                     description="Оплата с доступного баланса."
                      checked={enableCompanyBalance}
                      onChange={setEnableCompanyBalance}
                      disabled={!canManageSettings}
                   />
+
                   <ToggleRow
-                     label="Postpay (deferred payment)"
-                     description={`Use postpay limit (${company.postpayLimit.toLocaleString('ru-RU')} KZT, ${company.postpayDueDays} days due). Mostly for Postpay tariff.`}
+                     label="Postpay (отсрочка)"
+                     description={`Оплата по лимиту (${company.postpayLimit.toLocaleString('ru-RU')} KZT).`}
                      checked={enablePostpay}
                      onChange={setEnablePostpay}
                      disabled={!canManageSettings}
                   />
+
                   <ToggleRow
-                     label="Corporate card"
-                     description="Use saved corporate card as payment method. Data is tokenized by PSP in production."
+                     label="Корпоративная карта"
+                     description="Оплата сохранённой картой компании."
                      checked={enableCorpCard}
                      onChange={setEnableCorpCard}
                      disabled={!canManageSettings}
                   />
+
                   <ToggleRow
-                     label="Personal card"
-                     description="Allow employees to pay with personal card (usually no closing documents)."
+                     label="Личная карта"
+                     description="Оплата личной картой сотрудника."
                      checked={enablePersonalCard}
                      onChange={setEnablePersonalCard}
                      disabled={!canManageSettings}
                   />
                </div>
-               <div className="flex justify-end mt-2">
-                  <button className="btn-primary flex items-center gap-1 text-xs disabled:opacity-50" onClick={handleSavePaymentMethods} disabled={!canManageSettings}>
+
+               <div className="flex justify-end">
+                  <button className="btn-primary text-xs flex items-center gap-1" onClick={handleSavePaymentMethods} disabled={!canManageSettings}>
                      <Save size={14} />
-                     Save payment methods
+                     Сохранить методы оплаты
                   </button>
                </div>
             </div>
 
-            {/* 2.2 Corporate card binding */}
+            {/* Правая часть — корпоративная карта */}
             <div className="space-y-3">
                <div className="flex items-center justify-between">
-                  <h2 className="font-semibold text-sm flex items-center gap-2">
+                  <h2 className="font-semibold flex items-center gap-2">
                      <CreditCard size={16} className="text-slate-600" />
-                     Corporate payment card
+                     Корпоративная карта
                   </h2>
-                  {!canManageSettings && <span className="text-[11px] text-slate-400">Read-only</span>}
+                  {!canManageSettings && <span className="text-[11px] text-slate-400">Только просмотр</span>}
                </div>
 
                {company.corporateCard ? (
                   <>
-                     <div className="flex flex-col gap-1 text-xs">
+                     {/* Текущая карта */}
+                     <div className="text-xs space-y-1">
                         <div className="font-medium">
                            {company.corporateCard.brand} <span className="text-slate-500">•••• {company.corporateCard.last4}</span>
                         </div>
-                        <div className="text-[11px] text-slate-500">Holder: {company.corporateCard.holder}</div>
-                        <div className="text-[11px] text-slate-500">Expiry: {company.corporateCard.expiry}</div>
+                        <div className="text-[11px] text-slate-500">Владение: {company.corporateCard.holder}</div>
+                        <div className="text-[11px] text-slate-500">Истекает: {company.corporateCard.expiry}</div>
                         <div className="text-[11px] text-slate-500">
-                           Status:{' '}
+                           Статус:{' '}
                            <span className={company.corporateCard.status === 'ACTIVE' ? 'text-emerald-600' : 'text-red-600'}>
-                              {company.corporateCard.status === 'ACTIVE' ? 'Active' : 'Blocked'}
+                              {company.corporateCard.status === 'ACTIVE' ? 'Активна' : 'Заблокирована'}
                            </span>
-                        </div>
-                        <div className="text-[11px] text-slate-500 mt-1">
-                           Card is used when user selects “Corporate card” at payment step. In real system details come from PSP.
                         </div>
                      </div>
 
-                     <div className="border-t border-slate-100 pt-3 mt-2 space-y-3 text-xs">
-                        <div className="text-[11px] text-slate-500">In this prototype you can edit card data. In production it is read-only.</div>
+                     {/* Редактирование */}
+                     <div className="border-t pt-3 mt-3 text-xs space-y-3">
                         <div className="grid md:grid-cols-2 gap-3">
-                           <Field label="Card product / brand" value={cardBrand} onChange={setCardBrand} disabled={!canManageSettings} />
-                           <Field label="Last 4 digits" value={cardLast4} onChange={setCardLast4} disabled={!canManageSettings} placeholder="1234" />
-                           <Field label="Card holder" value={cardHolder} onChange={setCardHolder} disabled={!canManageSettings} />
-                           <Field label="Expiry (YYYY-MM)" value={cardExpiry} onChange={setCardExpiry} disabled={!canManageSettings} placeholder="2027-08" />
+                           <Field label="Продукт / бренд карты" value={cardBrand} onChange={setCardBrand} disabled={!canManageSettings} />
+                           <Field label="Последние 4 цифры" value={cardLast4} onChange={setCardLast4} disabled={!canManageSettings} placeholder="1234" />
+                           <Field label="Владелец карты" value={cardHolder} onChange={setCardHolder} disabled={!canManageSettings} />
+                           <Field label="Срок (YYYY-MM)" value={cardExpiry} onChange={setCardExpiry} disabled={!canManageSettings} placeholder="2027-08" />
                         </div>
-                        <div className="flex items-center justify-between">
-                           <div className="text-[11px] text-slate-500">
-                              Status
+
+                        <div className="flex justify-between items-center">
+                           <div className="text-[11px] text-slate-600">
+                              Статус
                               <select
                                  className="select ml-2 h-8 text-xs"
                                  value={cardStatus}
                                  onChange={e => setCardStatus(e.target.value as 'ACTIVE' | 'BLOCKED')}
                                  disabled={!canManageSettings}
                               >
-                                 <option value="ACTIVE">Active</option>
-                                 <option value="BLOCKED">Blocked</option>
+                                 <option value="ACTIVE">Активна</option>
+                                 <option value="BLOCKED">Заблокирована</option>
                               </select>
                            </div>
+
                            <div className="flex gap-2">
-                              <button
-                                 className="btn-ghost text-red-600 flex items-center gap-1 text-xs disabled:opacity-50"
-                                 onClick={handleUnbindCard}
-                                 disabled={!canManageSettings}
-                              >
+                              <button className="btn-ghost text-red-600 text-xs flex items-center gap-1" onClick={handleUnbindCard} disabled={!canManageSettings}>
                                  <Trash2 size={14} />
-                                 Remove card
+                                 Удалить
                               </button>
-                              <button className="btn-primary flex items-center gap-1 text-xs disabled:opacity-50" onClick={handleBindCard} disabled={!canManageSettings}>
+
+                              <button className="btn-primary text-xs flex items-center gap-1" onClick={handleBindCard} disabled={!canManageSettings}>
                                  <Save size={14} />
-                                 Save card
+                                 Сохранить
                               </button>
                            </div>
                         </div>
@@ -362,19 +382,19 @@ export default function CompanySettingsPage() {
                   </>
                ) : (
                   <>
-                     <div className="text-xs text-slate-600">
-                        No corporate card is linked yet. In real onboarding, card binding is done during first purchase or registration. Here you can simulate binding.
-                     </div>
+                     <div className="text-xs text-slate-600">Карта ещё не привязана. В реальном продукте — через PSP.</div>
+
                      <div className="grid md:grid-cols-2 gap-3 text-xs mt-2">
-                        <Field label="Card product / brand" value={cardBrand} onChange={setCardBrand} disabled={!canManageSettings} placeholder="Visa Business" />
-                        <Field label="Last 4 digits" value={cardLast4} onChange={setCardLast4} disabled={!canManageSettings} placeholder="4242" />
-                        <Field label="Card holder" value={cardHolder} onChange={setCardHolder} disabled={!canManageSettings} placeholder="Demo Company LLC" />
-                        <Field label="Expiry (YYYY-MM)" value={cardExpiry} onChange={setCardExpiry} disabled={!canManageSettings} placeholder="2027-08" />
+                        <Field label="Продукт / бренд карты" value={cardBrand} onChange={setCardBrand} disabled={!canManageSettings} placeholder="Visa Business" />
+                        <Field label="Последние 4 цифры" value={cardLast4} onChange={setCardLast4} disabled={!canManageSettings} placeholder="4242" />
+                        <Field label="Владелец карты" value={cardHolder} onChange={setCardHolder} disabled={!canManageSettings} placeholder="Demo Company LLC" />
+                        <Field label="Срок (YYYY-MM)" value={cardExpiry} onChange={setCardExpiry} disabled={!canManageSettings} placeholder="2027-08" />
                      </div>
+
                      <div className="flex justify-end mt-3">
-                        <button className="btn-primary flex items-center gap-1 text-xs disabled:opacity-50" onClick={handleBindCard} disabled={!canManageSettings}>
+                        <button className="btn-primary flex items-center gap-1 text-xs" onClick={handleBindCard} disabled={!canManageSettings}>
                            <CreditCard size={14} />
-                           Bind corporate card (simulate)
+                           Привязать карту (демо)
                         </button>
                      </div>
                   </>
@@ -382,83 +402,83 @@ export default function CompanySettingsPage() {
             </div>
          </div>
 
-         {/* 3. TRAVEL POLICY SETTINGS */}
+         {/* 3. ТРЕВЕЛ-ПОЛИТИКА */}
          <div className="card p-4 space-y-4 text-sm">
             <div className="flex items-center justify-between">
-               <h2 className="font-semibold text-sm flex items-center gap-2">
+               <h2 className="font-semibold flex items-center gap-2">
                   <Shield size={16} className="text-slate-600" />
-                  Travel policy settings
+                  Тревел-политика
                </h2>
-               {!canManageSettings && <span className="text-[11px] text-slate-400">Read-only in this prototype for non-admin roles</span>}
+               {!canManageSettings && <span className="text-[11px] text-slate-400">Только просмотр</span>}
             </div>
 
-            {/* Summary row */}
+            {/* краткий обзор */}
             <div className="grid md:grid-cols-3 gap-4 text-xs">
                <div className="flex items-start gap-2">
                   <Info size={14} className="mt-[2px] text-slate-500" />
                   <div>
-                     <div className="font-semibold text-[11px]">How this policy is used</div>
-                     <div className="text-[11px] text-slate-600 mt-1">
-                        Rules below define OK / WARN / BLOCK flags in flight search and booking. Read-only version is available on Travel Policy page.
-                     </div>
+                     <div className="font-semibold text-[11px]">Как используется политика</div>
+                     <div className="mt-1 text-[11px] text-slate-600">Эти правила определяют маркировку билетов OK/WARN/BLOCK при поиске.</div>
                   </div>
                </div>
+
                <div className="text-[11px] text-slate-600">
-                  <span className="font-semibold">Price logic</span>
-                  <div className="mt-1">OK: below {policySoftLimit.toLocaleString('ru-RU')} KZT</div>
+                  <span className="font-semibold">Логика цены</span>
+                  <div className="mt-1">OK: ниже {policySoftLimit.toLocaleString('ru-RU')} KZT</div>
                   <div>
                      WARN: {policySoftLimit.toLocaleString('ru-RU')} – {policyBlockLimit.toLocaleString('ru-RU')} KZT
                   </div>
-                  <div>BLOCK: above {policyBlockLimit.toLocaleString('ru-RU')} KZT</div>
+                  <div>BLOCK: выше {policyBlockLimit.toLocaleString('ru-RU')} KZT</div>
                </div>
+
                <div className="text-[11px] text-slate-600">
-                  <span className="font-semibold">Schedule & connections</span>
+                  <span className="font-semibold">Время и стыковки</span>
                   <div className="mt-1">
-                     Preferred departure: {policyPreferredFrom}–{policyPreferredTo}
+                     Окно вылета: {policyPreferredFrom}–{policyPreferredTo}
                   </div>
-                  <div>
-                     Connections: {policyAllowConnections ? 'allowed' : 'forbidden'}
-                     {policyAllowConnections && ` (max ${policyMaxConnectionTime} min)`}
-                  </div>
+                  <div>Стыковки: {policyAllowConnections ? `разрешены (до ${policyMaxConnectionTime} мин)` : 'запрещены'}</div>
                </div>
             </div>
 
-            {/* Price rules */}
-            <div className="border-t border-slate-100 pt-3 mt-2 space-y-3">
+            {/* правила цены */}
+            <div className="border-t pt-3 space-y-3">
                <div className="flex items-center gap-2 text-sm">
                   <Plane size={16} className="text-slate-600" />
-                  <span className="font-semibold">Flight price rules</span>
+                  <span className="font-semibold">Правила цены</span>
                </div>
+
                <div className="grid md:grid-cols-3 gap-4 text-xs">
-                  <Field label="Soft price limit (KZT)" value={policySoftLimit.toString()} onChange={v => setPolicySoftLimit(Number(v) || 0)} disabled={!canManageSettings} />
-                  <Field label="Block price limit (KZT)" value={policyBlockLimit.toString()} onChange={v => setPolicyBlockLimit(Number(v) || 0)} disabled={!canManageSettings} />
+                  <Field label="Soft-limit (KZT)" value={policySoftLimit.toString()} onChange={v => setPolicySoftLimit(Number(v) || 0)} disabled={!canManageSettings} />
+                  <Field label="Block-limit (KZT)" value={policyBlockLimit.toString()} onChange={v => setPolicyBlockLimit(Number(v) || 0)} disabled={!canManageSettings} />
                   <div className="text-[11px] text-slate-500 flex items-start gap-2">
                      <Info size={14} className="mt-[2px]" />
-                     <span>Soft limit = WARN threshold. Block limit = red zone, ticket cannot be purchased if price is above this value.</span>
+                     <span>Soft = предупреждение. Block = билет не может быть куплен.</span>
                   </div>
                </div>
             </div>
 
-            {/* Time window */}
-            <div className="border-t border-slate-100 pt-3 mt-2 space-y-3">
+            {/* правила времени */}
+            <div className="border-t pt-3 space-y-3">
                <div className="flex items-center gap-2 text-sm">
                   <Clock size={16} className="text-slate-600" />
-                  <span className="font-semibold">Preferred departure time window</span>
+                  <span className="font-semibold">Окно вылета</span>
                </div>
+
                <div className="grid md:grid-cols-3 gap-4 text-xs">
-                  <Field label="From" type="time" value={policyPreferredFrom} onChange={setPolicyPreferredFrom} disabled={!canManageSettings} />
-                  <Field label="To" type="time" value={policyPreferredTo} onChange={setPolicyPreferredTo} disabled={!canManageSettings} />
-                  <div className="text-[11px] text-slate-500">Flights outside this window are marked as WARN due to schedule mismatch.</div>
+                  <Field label="От" type="time" value={policyPreferredFrom} onChange={setPolicyPreferredFrom} disabled={!canManageSettings} />
+                  <Field label="До" type="time" value={policyPreferredTo} onChange={setPolicyPreferredTo} disabled={!canManageSettings} />
+                  <div className="text-[11px] text-slate-500">Билеты вне этого окна будут помечены как WARN.</div>
                </div>
             </div>
 
-            {/* Allowed classes + extra rules */}
-            <div className="border-t border-slate-100 pt-3 mt-2 grid md:grid-cols-2 gap-4 text-sm">
+            {/* классы + дополнительные правила */}
+            <div className="border-t pt-3 grid md:grid-cols-2 gap-4 text-sm">
                <div className="space-y-2">
                   <div className="flex items-center gap-2">
                      <Check size={16} className="text-slate-600" />
-                     <span className="font-semibold text-sm">Allowed flight classes</span>
+                     <span className="font-semibold">Разрешённые классы</span>
                   </div>
+
                   <div className="flex flex-wrap gap-3 text-xs">
                      {['ECONOMY', 'PREMIUM_ECONOMY', 'BUSINESS'].map(cl => (
                         <label key={cl} className="flex items-center gap-1">
@@ -467,244 +487,261 @@ export default function CompanySettingsPage() {
                         </label>
                      ))}
                   </div>
-                  <div className="text-[11px] text-slate-500">If a flight is in a class not checked here, it will be treated as BLOCK.</div>
+
+                  <div className="text-[11px] text-slate-500">Билет вне разрешённого класса = BLOCK.</div>
                </div>
 
                <div className="space-y-2">
                   <div className="flex items-center gap-2">
                      <Ban size={16} className="text-slate-600" />
-                     <span className="font-semibold text-sm">Additional rules</span>
+                     <span className="font-semibold">Дополнительные правила</span>
                   </div>
-                  <div className="space-y-2 text-xs">
-                     <ToggleRow label="Allow connecting flights" checked={policyAllowConnections} onChange={setPolicyAllowConnections} disabled={!canManageSettings} />
+
+                  <div className="space-y-3 text-xs">
+                     <ToggleRow label="Разрешить стыковки" checked={policyAllowConnections} onChange={setPolicyAllowConnections} disabled={!canManageSettings} />
+
                      {policyAllowConnections && (
                         <Field
-                           label="Max connection time (minutes)"
+                           label="Макс. стыковка (мин)"
                            value={policyMaxConnectionTime.toString()}
                            onChange={v => setPolicyMaxConnectionTime(Number(v) || 0)}
                            disabled={!canManageSettings}
                         />
                      )}
-                     <ToggleRow label="Hand baggage only" checked={policyHandBaggageOnly} onChange={setPolicyHandBaggageOnly} disabled={!canManageSettings} />
-                  </div>
-                  <div className="text-[11px] text-slate-500">
-                     These rules are applied in addition to price and time conditions and are reflected in flight badges and tooltips.
+
+                     <ToggleRow label="Только ручная кладь" checked={policyHandBaggageOnly} onChange={setPolicyHandBaggageOnly} disabled={!canManageSettings} />
                   </div>
                </div>
             </div>
 
-            <div className="flex justify-end pt-2">
-               <button className="btn-primary flex items-center gap-1 text-xs disabled:opacity-50" onClick={handleSaveTravelPolicy} disabled={!canManageSettings}>
+            <div className="flex justify-end">
+               <button className="btn-primary flex items-center gap-1 text-xs" onClick={handleSaveTravelPolicy} disabled={!canManageSettings}>
                   <Save size={14} />
-                  Save travel policy
+                  Сохранить тревел-политику
                </button>
             </div>
          </div>
 
-         {/* 4. DEPARTMENTS & COST CENTERS */}
+         {/* 4. Департаменты */}
          <div className="card p-4 space-y-4 text-sm">
             <div className="flex items-center justify-between">
-               <h2 className="font-semibold text-sm flex items-center gap-2">
+               <h2 className="font-semibold flex items-center gap-2">
                   <Layers size={16} className="text-slate-600" />
-                  Departments & cost centers
+                  Департаменты и центры затрат
                </h2>
-               {!canManageSettings && <span className="text-[11px] text-slate-400">Read-only</span>}
+               {!canManageSettings && <span className="text-[11px] text-slate-400">Только просмотр</span>}
             </div>
+
             <div className="grid md:grid-cols-2 gap-4 text-xs">
+               {/* Департаменты */}
                <div>
-                  <div className="font-semibold text-[11px] mb-1">Departments</div>
-                  <div className="flex flex-wrap gap-2 mb-2">
+                  <div className="font-semibold text-[11px] mb-2">Департаменты</div>
+
+                  <div className="flex flex-wrap gap-2 mb-3">
                      {departments.map(d => (
-                        <span key={d} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-50 text-slate-700 border border-slate-200">
+                        <span key={d} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-50 border border-slate-200">
                            {d}
                            {canManageSettings && (
-                              <button type="button" className="text-[10px] text-slate-400" onClick={() => removeDepartment(d)}>
+                              <button className="text-[10px] text-slate-400" onClick={() => removeDepartment(d)}>
                                  ×
                               </button>
                            )}
                         </span>
                      ))}
-                     {departments.length === 0 && <span className="text-slate-400">No departments configured</span>}
+                     {departments.length === 0 && <span className="text-slate-400">Нет департаментов</span>}
                   </div>
+
                   <div className="flex gap-2">
-                     <input className="input h-8 text-xs" placeholder="Add department" value={newDept} onChange={e => setNewDept(e.target.value)} disabled={!canManageSettings} />
-                     <button className="btn-primary h-8 text-[11px] disabled:opacity-50" onClick={addDepartment} disabled={!canManageSettings || !newDept.trim()}>
-                        Add
+                     <input
+                        className="input h-8 text-xs"
+                        placeholder="Добавить департамент"
+                        value={newDept}
+                        onChange={e => setNewDept(e.target.value)}
+                        disabled={!canManageSettings}
+                     />
+
+                     <button className="btn-primary h-8 text-[11px]" onClick={addDepartment} disabled={!canManageSettings || !newDept.trim()}>
+                        Добавить
                      </button>
                   </div>
                </div>
+
+               {/* Центры затрат */}
                <div>
-                  <div className="font-semibold text-[11px] mb-1">Cost centers</div>
+                  <div className="font-semibold text-[11px] mb-2">Центры затрат</div>
+
                   <div className="space-y-1 mb-2">
                      {costCenters.map(cc => (
-                        <div key={cc.code} className="flex items-center justify-between px-2 py-1 rounded border border-slate-200 bg-slate-50">
+                        <div key={cc.code} className="px-2 py-1 border rounded bg-slate-50 flex justify-between items-center">
                            <div>
                               <div className="font-mono text-[11px]">{cc.code}</div>
                               <div className="text-[11px] text-slate-600">{cc.name}</div>
                            </div>
+
                            {canManageSettings && (
-                              <button className="btn-ghost text-[11px] text-red-600 h-7 px-2" onClick={() => removeCostCenter(cc.code)}>
-                                 Remove
+                              <button className="btn-ghost text-red-600 text-[11px]" onClick={() => removeCostCenter(cc.code)}>
+                                 Удалить
                               </button>
                            )}
                         </div>
                      ))}
-                     {costCenters.length === 0 && <div className="text-slate-400 text-xs">No cost centers configured</div>}
+
+                     {costCenters.length === 0 && <div className="text-slate-400 text-xs">Нет центров затрат</div>}
                   </div>
+
                   <div className="grid grid-cols-[auto,1fr] gap-2">
                      <input
                         className="input h-8 text-xs"
-                        placeholder="Code (e.g. CC-020)"
+                        placeholder="Код (например CC-020)"
                         value={newCCCode}
                         onChange={e => setNewCCCode(e.target.value)}
                         disabled={!canManageSettings}
                      />
-                     <input className="input h-8 text-xs" placeholder="Name" value={newCCName} onChange={e => setNewCCName(e.target.value)} disabled={!canManageSettings} />
+
+                     <input className="input h-8 text-xs" placeholder="Название" value={newCCName} onChange={e => setNewCCName(e.target.value)} disabled={!canManageSettings} />
                   </div>
+
                   <div className="flex justify-end mt-2">
-                     <button
-                        className="btn-primary h-8 text-[11px] disabled:opacity-50"
-                        onClick={addCostCenter}
-                        disabled={!canManageSettings || !newCCCode.trim() || !newCCName.trim()}
-                     >
-                        Add cost center
+                     <button className="btn-primary h-8 text-[11px]" onClick={addCostCenter} disabled={!canManageSettings || !newCCCode.trim() || !newCCName.trim()}>
+                        Добавить центр затрат
                      </button>
                   </div>
                </div>
             </div>
          </div>
 
-         {/* 5. DOCUMENTS & INVOICES */}
-         <div className="card p-4 space-y-3 text-sm">
+         {/* 5. ДОКУМЕНТЫ */}
+         <div className="card p-4 space-y-4 text-sm">
             <div className="flex items-center justify-between">
-               <h2 className="font-semibold text-sm flex items-center gap-2">
+               <h2 className="font-semibold flex items-center gap-2">
                   <Globe size={16} className="text-slate-600" />
-                  Documents & invoices
+                  Документы и счета
                </h2>
-               {!canManageSettings && <span className="text-[11px] text-slate-400">Read-only for coordinator. Changes available for admin only.</span>}
+               {!canManageSettings && <span className="text-[11px] text-slate-400">Только просмотр</span>}
             </div>
 
             <div className="grid md:grid-cols-3 gap-3 text-xs">
                <div>
-                  <label className="text-[11px] text-slate-500">Email for documents</label>
+                  <label className="text-[11px] text-slate-500">Email для документов</label>
                   <input className="input mt-1 h-8" value={docEmail} onChange={e => setDocEmail(e.target.value)} disabled={!canManageSettings} />
-                  <div className="text-[10px] text-slate-500 mt-1">All invoices and acts will be sent to this email by default.</div>
+                  <div className="text-[10px] text-slate-500 mt-1">Все счета и акты будут отправляться на этот email.</div>
                </div>
+
                <div>
-                  <label className="text-[11px] text-slate-500">Language of documents</label>
+                  <label className="text-[11px] text-slate-500">Язык документов</label>
                   <select className="select mt-1 h-8" value={docLanguage} onChange={e => setDocLanguage(e.target.value as 'ru' | 'en')} disabled={!canManageSettings}>
-                     <option value="ru">Russian</option>
-                     <option value="en">English</option>
+                     <option value="ru">Русский</option>
+                     <option value="en">Английский</option>
                   </select>
                </div>
-               <div className="flex flex-col justify-between">
-                  <label className="text-[11px] text-slate-500">Auto-send documents</label>
-                  <div className="flex items-center gap-2 mt-1">
-                     <input
-                        id="autoSendDocs"
-                        type="checkbox"
-                        className="h-4 w-4"
-                        checked={autoSendDocs}
-                        onChange={e => setAutoSendDocs(e.target.checked)}
-                        disabled={!canManageSettings}
-                     />
-                     <label htmlFor="autoSendDocs" className="text-[11px] text-slate-600">
-                        Send invoice & act automatically after successful payment
-                     </label>
+
+               <div>
+                  <label className="text-[11px] text-slate-500">Автоматическая отправка</label>
+                  <div className="mt-1 flex items-center gap-2">
+                     <input type="checkbox" checked={autoSendDocs} onChange={e => setAutoSendDocs(e.target.checked)} disabled={!canManageSettings} />
+                     <span className="text-[11px] text-slate-600">Отправлять счет и акт автоматически</span>
                   </div>
                </div>
             </div>
 
             <div className="flex justify-end">
-               <button className="btn-primary flex items-center gap-1 text-xs disabled:opacity-50" onClick={handleSaveDocsSettings} disabled={!canManageSettings}>
+               <button className="btn-primary flex items-center gap-1 text-xs" onClick={handleSaveDocsSettings} disabled={!canManageSettings}>
                   <Save size={14} />
-                  Save documents settings
+                  Сохранить
                </button>
             </div>
          </div>
 
-         {/* 6. NOTIFICATIONS & ALERTS */}
-         <div className="card p-4 space-y-3 text-sm">
+         {/* 6. УВЕДОМЛЕНИЯ */}
+         <div className="card p-4 space-y-4 text-sm">
             <div className="flex items-center justify-between">
-               <h2 className="font-semibold text-sm flex items-center gap-2">
+               <h2 className="font-semibold flex items-center gap-2">
                   <Bell size={16} className="text-slate-600" />
-                  Notifications & alerts
+                  Уведомления
                </h2>
-               {!canManageSettings && <span className="text-[11px] text-slate-400">Read-only for coordinator</span>}
+               {!canManageSettings && <span className="text-[11px] text-slate-400">Только просмотр</span>}
             </div>
-            <div className="grid md:grid-cols-2 gap-3 text-xs">
+
+            <div className="grid md:grid-cols-2 gap-4">
                <ToggleRow
                   icon={<Mail size={12} className="text-slate-500" />}
-                  label="Ticket booked"
-                  description="Send email when ticket is successfully booked and issued."
+                  label="Билет забронирован"
+                  description="Уведомлять при успешном бронировании билета."
                   checked={notifyTicketBooked}
                   onChange={setNotifyTicketBooked}
                   disabled={!canManageSettings}
                />
+
                <ToggleRow
                   icon={<Shield size={12} className="text-slate-500" />}
-                  label="Policy breach"
-                  description="Send alert when coordinator books option outside travel policy."
+                  label="Нарушение политики"
+                  description="Отправлять предупреждение, если опция вне политики."
                   checked={notifyPolicyBreach}
                   onChange={setNotifyPolicyBreach}
                   disabled={!canManageSettings}
                />
+
                <ToggleRow
                   icon={<CreditCard size={12} className="text-slate-500" />}
-                  label="Postpay due reminders"
-                  description="Reminders when postpay invoices are close to due date."
+                  label="Напоминания Postpay"
+                  description="Напоминания о скорых сроках оплаты по Postpay."
                   checked={notifyPostpayDue}
                   onChange={setNotifyPostpayDue}
                   disabled={!canManageSettings}
                />
+
                <ToggleRow
                   icon={<Settings2 size={12} className="text-slate-500" />}
-                  label="Weekly digest"
-                  description="Weekly summary with new trips, spend and policy events."
+                  label="Еженедельный дайджест"
+                  description="Сводка недели: расходы, поездки, нарушения."
                   checked={notifyWeeklyDigest}
                   onChange={setNotifyWeeklyDigest}
                   disabled={!canManageSettings}
                />
             </div>
+
             <div className="flex justify-end">
-               <button className="btn-primary flex items-center gap-1 text-xs disabled:opacity-50" onClick={handleSaveNotifications} disabled={!canManageSettings}>
+               <button className="btn-primary flex items-center gap-1 text-xs" onClick={handleSaveNotifications} disabled={!canManageSettings}>
                   <Save size={14} />
-                  Save notifications
+                  Сохранить
                </button>
             </div>
          </div>
 
-         {/* 7. TARIFF MANAGEMENT */}
-         <div className="card p-4 space-y-3 text-sm">
+         {/* 7. ТАРИФЫ */}
+         <div className="card p-4 space-y-4 text-sm">
             <div className="flex items-center justify-between">
-               <h2 className="font-semibold text-sm flex items-center gap-2">
+               <h2 className="font-semibold flex items-center gap-2">
                   <Settings2 size={16} className="text-slate-600" />
-                  Tariff management
+                  Управление тарифом
                </h2>
-               {!canManageTariff && <span className="text-[11px] text-slate-400">Tariff changes allowed for admin only</span>}
+               {!canManageTariff && <span className="text-[11px] text-slate-400">Только администратор может менять тариф</span>}
             </div>
+
             <div className="grid md:grid-cols-3 gap-3 text-xs">
                <TariffCard
                   name="FREE"
                   current={company.tariff}
                   title="Free"
-                  description="Simple flow, minimum steps, usually personal card or company balance. No SLA support."
+                  description="Базовый тариф без SLA. Быстрый и простой флоу."
                   onSelect={() => handleChangeTariff('FREE')}
                   disabled={!canManageTariff}
                />
+
                <TariffCard
                   name="POSTPAY"
                   current={company.tariff}
                   title="Postpay"
-                  description="Deferred payment with limit and due date. Includes support and service fee."
+                  description="Отсрочка оплаты + сервисный сбор + поддержка."
                   onSelect={() => handleChangeTariff('POSTPAY')}
                   disabled={!canManageTariff}
                />
+
                <TariffCard
                   name="FLEX"
                   current={company.tariff}
                   title="Flex / VIP"
-                  description="Flexible changes, priority support, API integration. Best for heavy corporate usage."
+                  description="Максимальная гибкость, SLA, приоритетная поддержка."
                   onSelect={() => handleChangeTariff('FLEX')}
                   disabled={!canManageTariff}
                />
@@ -714,7 +751,9 @@ export default function CompanySettingsPage() {
    )
 }
 
-/* ==== SMALL COMPONENTS ==== */
+/* ---------------------------------------------
+ * МЕЛКИЕ КОМПОНЕНТЫ (Field, ToggleRow, TariffCard)
+ * --------------------------------------------- */
 
 function Field({
    label,
@@ -786,6 +825,7 @@ function TariffCard({
    disabled?: boolean
 }) {
    const active = current === name
+
    return (
       <button
          type="button"
@@ -797,7 +837,7 @@ function TariffCard({
       >
          <div className="flex items-center justify-between">
             <span className="font-semibold text-sm">{title}</span>
-            {active && <span className="badge-soft text-[10px] border border-sky-300 bg-sky-50">current</span>}
+            {active && <span className="badge-soft text-[10px] border border-sky-300 bg-sky-50">текущий</span>}
          </div>
          <div className="text-[11px] text-slate-600">{description}</div>
       </button>

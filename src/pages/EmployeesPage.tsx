@@ -45,7 +45,7 @@ export default function EmployeesPage() {
 
    const handleAddEmployee = () => {
       if (!newName.trim() || !newEmail.trim()) {
-         alert('Name and email are required')
+         alert('Имя и email — обязательные поля')
          return
       }
       addEmployee({
@@ -65,17 +65,20 @@ export default function EmployeesPage() {
 
    return (
       <div className="space-y-5">
-         <SectionHeader title="Employees" subtitle="Manage employees, their roles and travel documents. Admin configures, coordinators book." />
+         <SectionHeader title="Сотрудники" subtitle="Управляйте сотрудниками, их ролями и тревел-документами. Администратор настраивает, координаторы оформляют поездки." />
 
          {/* Верхний блок: CTA + краткое описание */}
          <div className="card p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div className="text-xs text-slate-600 flex items-start gap-2">
                <Shield size={14} className="mt-[2px] text-slate-500" />
-               <span>Employees are used as travelers in bookings. Admin manages roles and documents, coordinator works with day-to-day trips and tickets.</span>
+               <span>
+                  Сотрудники используются как путешественники в бронированиях. Администратор управляет ролями и документами, координатор работает с ежедневными поездками и
+                  билетами.
+               </span>
             </div>
             <button className="btn-primary flex items-center gap-2 text-xs self-start md:self-auto" onClick={() => setShowAdd(prev => !prev)}>
                <Plus size={14} />
-               Add employee
+               Добавить сотрудника
             </button>
          </div>
 
@@ -83,23 +86,23 @@ export default function EmployeesPage() {
          {showAdd && (
             <div className="card p-4 space-y-3">
                <div className="grid md:grid-cols-4 gap-3 text-sm">
-                  <Field label="Full name" value={newName} onChange={setNewName} />
+                  <Field label="ФИО" value={newName} onChange={setNewName} />
                   <Field label="Email" value={newEmail} onChange={setNewEmail} />
-                  <Field label="Department (optional)" value={newDept} onChange={setNewDept} />
+                  <Field label="Отдел (опционально)" value={newDept} onChange={setNewDept} />
                   <div>
-                     <label className="text-xs text-slate-500">Role</label>
+                     <label className="text-xs text-slate-500">Роль</label>
                      <select className="select mt-1" value={newRole} onChange={e => setNewRole(e.target.value as Role)}>
-                        <option value="ADMIN">Admin</option>
-                        <option value="COORDINATOR">Coordinator</option>
+                        <option value="ADMIN">Администратор</option>
+                        <option value="COORDINATOR">Координатор</option>
                      </select>
                   </div>
                </div>
                <div className="flex gap-2 justify-end text-xs">
                   <button className="btn-ghost" onClick={() => setShowAdd(false)}>
-                     Cancel
+                     Отмена
                   </button>
                   <button className="btn-primary" onClick={handleAddEmployee}>
-                     Save employee
+                     Сохранить сотрудника
                   </button>
                </div>
             </div>
@@ -109,25 +112,25 @@ export default function EmployeesPage() {
          <div className="card p-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3 text-xs">
             <div className="flex items-center gap-2 text-slate-600">
                <Filter size={14} />
-               <span>Filter employees</span>
+               <span>Фильтрация сотрудников</span>
             </div>
             <div className="grid gap-2 md:grid-cols-3 w-full md:w-auto">
                <div>
-                  <label className="text-[11px] text-slate-500">Search (name or email)</label>
-                  <input className="input mt-1 h-8 text-xs" placeholder="Type to search..." value={search} onChange={e => setSearch(e.target.value)} />
+                  <label className="text-[11px] text-slate-500">Поиск (имя или email)</label>
+                  <input className="input mt-1 h-10 text-xs" placeholder="Введите текст..." value={search} onChange={e => setSearch(e.target.value)} />
                </div>
                <div>
-                  <label className="text-[11px] text-slate-500">Role</label>
-                  <select className="select mt-1 h-8 text-xs" value={roleFilter} onChange={e => setRoleFilter(e.target.value as 'ALL' | Role)}>
-                     <option value="ALL">All roles</option>
-                     <option value="ADMIN">Admin</option>
-                     <option value="COORDINATOR">Coordinator</option>
+                  <label className="text-[11px] text-slate-500">Роль</label>
+                  <select className="select mt-1 h-10 text-xs" value={roleFilter} onChange={e => setRoleFilter(e.target.value as 'ALL' | Role)}>
+                     <option value="ALL">Все роли</option>
+                     <option value="ADMIN">Администратор</option>
+                     <option value="COORDINATOR">Координатор</option>
                   </select>
                </div>
                <div>
-                  <label className="text-[11px] text-slate-500">Department</label>
-                  <select className="select mt-1 h-8 text-xs" value={deptFilter} onChange={e => setDeptFilter(e.target.value as 'ALL' | string)}>
-                     <option value="ALL">All departments</option>
+                  <label className="text-[11px] text-slate-500">Отдел</label>
+                  <select className="select mt-1 h-10 text-xs" value={deptFilter} onChange={e => setDeptFilter(e.target.value as 'ALL' | string)}>
+                     <option value="ALL">Все отделы</option>
                      {departmentOptions.map(dep => (
                         <option key={dep} value={dep}>
                            {dep}
@@ -143,11 +146,11 @@ export default function EmployeesPage() {
             <table className="w-full text-sm border-collapse">
                <thead className="bg-slate-50 text-xs text-slate-500">
                   <tr>
-                     <th className="px-3 py-2 text-left">Employee</th>
-                     <th className="px-3 py-2 text-left">Department</th>
-                     <th className="px-3 py-2 text-left">Role</th>
-                     <th className="px-3 py-2 text-left">Documents</th>
-                     <th className="px-3 py-2 text-right">Actions</th>
+                     <th className="px-3 py-2 text-left">Сотрудник</th>
+                     <th className="px-3 py-2 text-left">Отдел</th>
+                     <th className="px-3 py-2 text-left">Роль</th>
+                     <th className="px-3 py-2 text-left">Документы</th>
+                     <th className="px-3 py-2 text-right">Действия</th>
                   </tr>
                </thead>
                <tbody>
@@ -164,9 +167,9 @@ export default function EmployeesPage() {
                            </td>
                            <td className="px-3 py-2 text-xs text-slate-600">{e.department || <span className="text-slate-400">—</span>}</td>
                            <td className="px-3 py-2 text-xs">
-                              <select className="select h-7 text-xs" value={e.role} onChange={ev => updateEmployeeRole(e.id, ev.target.value as Role)}>
-                                 <option value="ADMIN">Admin</option>
-                                 <option value="COORDINATOR">Coordinator</option>
+                              <select className="select h-10 text-xs" value={e.role} onChange={ev => updateEmployeeRole(e.id, ev.target.value as Role)}>
+                                 <option value="ADMIN">Администратор</option>
+                                 <option value="COORDINATOR">Координатор</option>
                               </select>
                            </td>
                            <td className="px-3 py-2 text-xs">
@@ -175,23 +178,23 @@ export default function EmployeesPage() {
                                     {docInfo.icon}
                                     <span className={docInfo.className}>{docInfo.label}</span>
                                  </div>
-                                 <div className="text-[11px] text-slate-500">{canTravel ? 'OK for booking' : 'Cannot book flights (no valid ID/passport)'}</div>
+                                 <div className="text-[11px] text-slate-500">{canTravel ? 'Можно бронировать билеты' : 'Нельзя бронировать (нет действующего паспорта/ID)'}</div>
                               </div>
                            </td>
                            <td className="px-3 py-2 text-xs text-right">
                               <div className="inline-flex gap-2">
                                  <button className="btn-ghost" onClick={() => nav(`/employees/${e.id}`)}>
-                                    View
+                                    Открыть
                                  </button>
                                  <button
                                     className="btn-ghost text-red-600"
                                     onClick={() => {
-                                       if (window.confirm('Remove this employee from company?')) {
+                                       if (window.confirm('Удалить этого сотрудника из компании?')) {
                                           removeEmployee(e.id)
                                        }
                                     }}
                                  >
-                                    Remove
+                                    Удалить
                                  </button>
                               </div>
                            </td>
@@ -201,7 +204,7 @@ export default function EmployeesPage() {
                </tbody>
             </table>
 
-            {filteredEmployees.length === 0 && <div className="p-4 text-xs text-slate-500 text-center">No employees match current filters.</div>}
+            {filteredEmployees.length === 0 && <div className="p-4 text-xs text-slate-500 text-center">По текущим фильтрам сотрудники не найдены.</div>}
          </div>
       </div>
    )
@@ -219,7 +222,7 @@ function Field({ label, value, onChange }: { label: string; value: string; onCha
 function getDocumentsStatus(e: Employee) {
    if (!e.documents || e.documents.length === 0) {
       return {
-         label: 'No documents',
+         label: 'Нет документов',
          className: 'text-slate-500',
          icon: <AlertCircle size={12} className="text-slate-400" />,
       }
@@ -235,20 +238,20 @@ function getDocumentsStatus(e: Employee) {
 
    if (hasExpired) {
       return {
-         label: 'Some documents expired',
+         label: 'Часть документов просрочена',
          className: 'text-red-600',
          icon: <AlertCircle size={12} className="text-red-500" />,
       }
    }
    if (hasSoon) {
       return {
-         label: 'Expiring soon',
+         label: 'Скоро истекают',
          className: 'text-amber-600',
          icon: <AlertCircle size={12} className="text-amber-500" />,
       }
    }
    return {
-      label: 'All documents valid',
+      label: 'Все документы валидны',
       className: 'text-emerald-600',
       icon: <CheckCircle2 size={12} className="text-emerald-500" />,
    }

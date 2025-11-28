@@ -25,6 +25,8 @@ import { QuickActionFloatingButton } from './components/QuickActionFloatingButto
 import { HotkeysProvider } from './components/HotkeysProvider.tsx'
 import { GlobalShortcutsProvider } from './components/GlobalShortcutsProvider.tsx'
 import { KeyboardShortcutsModal } from './components/KeyboardShortcutsModal'
+import PenaltiesPage from './pages/PenaltiesPage.tsx'
+import BusinessTripsPage from './pages/BusinessTrip.tsx'
 
 function Protected({ children }: { children: React.ReactNode }) {
    const { user } = useStore()
@@ -122,6 +124,7 @@ function AppInner() {
                      </Protected>
                   }
                />
+               <Route path="/business-trips/:id" element={<BusinessTripsPage />} />
                <Route
                   path="/employees"
                   element={
@@ -152,6 +155,14 @@ function AppInner() {
                   element={
                      <Protected>
                         <CompanySettingsPage />
+                     </Protected>
+                  }
+               />
+               <Route
+                  path="/penaltes"
+                  element={
+                     <Protected>
+                        <PenaltiesPage />
                      </Protected>
                   }
                />

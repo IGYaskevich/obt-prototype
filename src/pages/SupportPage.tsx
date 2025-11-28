@@ -217,7 +217,7 @@ export default function SupportPage() {
                <div className="grid md:grid-cols-2 gap-3">
                   <div>
                      <label className="text-[11px] text-slate-500">Issue type</label>
-                     <select className="select mt-1 h-8 text-xs w-full" value={issueType} onChange={e => setIssueType(e.target.value as IssueType)}>
+                     <select className="select mt-1 h-10 text-xs w-full" value={issueType} onChange={e => setIssueType(e.target.value as IssueType)}>
                         <option value="BOOKING">Booking / ticket issue</option>
                         <option value="PAYMENT">Payment / refund</option>
                         <option value="DOCUMENTS">Documents / invoices</option>
@@ -228,7 +228,7 @@ export default function SupportPage() {
                   </div>
                   <div>
                      <label className="text-[11px] text-slate-500">Urgency</label>
-                     <select className="select mt-1 h-8 text-xs w-full" value={severity} onChange={e => setSeverity(e.target.value as Severity)}>
+                     <select className="select mt-1 h-10 text-xs w-full" value={severity} onChange={e => setSeverity(e.target.value as Severity)}>
                         <option value="LOW">Low — just a question</option>
                         <option value="NORMAL">Normal — need help soon</option>
                         <option value="HIGH">High — trip is today / tomorrow</option>

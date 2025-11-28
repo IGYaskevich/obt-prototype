@@ -24,18 +24,27 @@ type PassengerGuest = {
 type Passenger = PassengerEmployee | PassengerGuest
 
 type PaymentMethod = 'COMPANY_BALANCE' | 'CORP_CARD' | 'POSTPAY' | 'PERSONAL_CARD'
-
 type PurchaseStatus = 'IDLE' | 'PROCESSING' | 'DONE'
 
 export default function TicketPurchasePage() {
    const nav = useNavigate()
-   const { company, selectedFlight, employees, getEmployeeById, employeeHasValidDocs, travelPolicy, addTrip } = useStore()
+
+   const {
+      company,
+      selectedFlight,
+      employees,
+      getEmployeeById,
+      employeeHasValidDocs,
+      travelPolicy,
+      addTrip,
+      addPolicyViolationPenalty, // ← ДОБАВЛЕНО
+   } = useStore()
 
    if (!company) {
       return (
          <div className="space-y-4">
-            <SectionHeader title="Checkout" subtitle="Company context is missing. Please log in again." />
-            <div className="card p-4 text-sm text-red-600">Company is not available in current session.</div>
+            <SectionHeader title="Оформление" subtitle="Контекст компании отсутствует. Пожалуйста, войдите заново." />
+            <div className="card p-4 text-sm text-red-600">Компания не найдена в текущей сессии.</div>
          </div>
       )
    }
@@ -43,19 +52,19 @@ export default function TicketPurchasePage() {
    if (!selectedFlight) {
       return (
          <div className="space-y-4">
-            <SectionHeader title="Checkout" subtitle="You need to select a flight before purchasing." />
+            <SectionHeader title="Оформление" subtitle="Выберите рейс перед покупкой." />
             <div className="card p-4 text-sm flex items-center justify-between">
-               <span>No flight selected.</span>
+               <span>Рейс не выбран.</span>
                <button className="btn-primary flex items-center gap-1 text-xs" onClick={() => nav('/search')}>
                   <ArrowLeft size={14} />
-                  Back to search
+                  Назад к поиску
                </button>
             </div>
          </div>
       )
    }
 
-   // -------- HELPERS --------
+   // ------------------ POLICY CHECK -----------------------
 
    const timeToMinutes = (hhmm: string): number => {
       const [h, m] = hhmm.split(':').map(Number)
@@ -87,7 +96,7 @@ export default function TicketPurchasePage() {
       return result
    }, [selectedFlight, travelPolicy])
 
-   const flightPolicyLabel = flightPolicy === 'OK' ? 'Within company policy' : flightPolicy === 'WARN' ? 'Allowed with warning' : 'Blocked by policy'
+   const flightPolicyLabel = flightPolicy === 'OK' ? 'В пределах политики' : flightPolicy === 'WARN' ? 'Допустимо с предупреждением' : 'Заблокировано политикой'
 
    const flightPolicyBadgeClass =
       flightPolicy === 'OK'
@@ -96,11 +105,9 @@ export default function TicketPurchasePage() {
            ? 'bg-amber-50 text-amber-700 border border-amber-200'
            : 'bg-red-50 text-red-700 border-red-200'
 
-   // -------- PASSENGERS --------
+   // ------------------ PASSENGERS -----------------------
 
-   const defaultEmployee =
-      employees.find(e => e.email === company?.tariff && false) || // просто заглушка, по сути всегда false
-      employees[0]
+   const defaultEmployee = employees[0]
 
    const [passengers, setPassengers] = useState<Passenger[]>(
       defaultEmployee
@@ -114,7 +121,7 @@ export default function TicketPurchasePage() {
          : [],
    )
 
-   const [employeeToAdd, setEmployeeToAdd] = useState<string>(defaultEmployee ? defaultEmployee.id : employees[0]?.id || '')
+   const [employeeToAdd, setEmployeeToAdd] = useState(defaultEmployee?.id || '')
 
    const [guestFullName, setGuestFullName] = useState('')
    const [guestRelation, setGuestRelation] = useState('')
@@ -134,7 +141,7 @@ export default function TicketPurchasePage() {
             id: crypto.randomUUID(),
             kind: 'GUEST',
             fullName: guestFullName.trim(),
-            relation: guestRelation.trim() || 'Family',
+            relation: guestRelation.trim() || 'Гость',
             docNumber: guestDocNumber.trim(),
             docExpiration: guestDocExpiration.trim(),
          },
@@ -145,15 +152,12 @@ export default function TicketPurchasePage() {
       setGuestDocExpiration('')
    }
 
-   const removePassenger = (id: string) => {
-      setPassengers(prev => prev.filter(p => p.id !== id))
-   }
+   const removePassenger = (id: string) => setPassengers(prev => prev.filter(p => p.id !== id))
 
    const passengersCount = passengers.length
-
    const firstEmployeePassenger = passengers.find(p => p.kind === 'EMPLOYEE') as PassengerEmployee | undefined
 
-   // -------- PAYMENT METHOD --------
+   // ------------------ PAYMENT -----------------------
 
    const allowedPaymentMethods: PaymentMethod[] = useMemo(() => {
       switch (company.tariff) {
@@ -168,23 +172,22 @@ export default function TicketPurchasePage() {
    }, [company.tariff])
 
    const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(allowedPaymentMethods[0])
+   const closingDocsAvailable = paymentMethod !== 'PERSONAL_CARD'
 
-   const paymentLabel = (m: PaymentMethod): string => {
+   const paymentLabel = (m: PaymentMethod) => {
       switch (m) {
          case 'COMPANY_BALANCE':
-            return 'Company balance'
+            return 'Баланс компании'
          case 'CORP_CARD':
-            return 'Corporate card'
+            return 'Корпоративная карта'
          case 'POSTPAY':
-            return 'Postpay (invoice)'
+            return 'Отложенный платёж (Postpay)'
          case 'PERSONAL_CARD':
-            return 'Personal card'
+            return 'Личная карта'
       }
    }
 
-   const closingDocsAvailable = paymentMethod === 'PERSONAL_CARD' ? false : true
-
-   // -------- PURCHASE SIMULATION --------
+   // ------------------ PURCHASE -----------------------
 
    const [purchaseStatus, setPurchaseStatus] = useState<PurchaseStatus>('IDLE')
 
@@ -197,11 +200,10 @@ export default function TicketPurchasePage() {
 
       setPurchaseStatus('PROCESSING')
 
-      // имитация async-операции
       setTimeout(() => {
-         // создаём Trip в store
+         // создаём трип
          addTrip({
-            title: `${selectedFlight.from} → ${selectedFlight.to} • ${passengersCount} pax`,
+            title: `${selectedFlight.from} → ${selectedFlight.to} • ${passengersCount} пассажиров`,
             total: totalAmount,
             // @ts-ignore
             type: 'single',
@@ -209,120 +211,112 @@ export default function TicketPurchasePage() {
             employeeId: firstEmployeePassenger?.employeeId,
          })
 
+         // === ДОБАВЛЕННО: автоматическое создание штрафа ===
+         if (flightPolicy === 'WARN' && firstEmployeePassenger) {
+            const penaltyAmount = Math.round(totalAmount * 0.1) // условно 10%
+            addPolicyViolationPenalty({
+               employeeId: firstEmployeePassenger.employeeId,
+               amount: penaltyAmount,
+               reason: 'Покупка билета вне travel-политики (soft-limit или неподходящее время вылета)',
+            })
+         }
+
          setPurchaseStatus('DONE')
       }, 1200)
    }
 
    const handleDownloadTickets = () => {
-      alert('Simulated: download tickets PDF for all passengers.')
+      alert('Заглушка: скачивание билетов (PDF)')
    }
 
    const handleDownloadAllDocs = () => {
       if (!closingDocsAvailable) {
-         alert('Closing documents are not available for personal card payments.')
+         alert('Закрывающие документы недоступны для оплаты личной картой')
          return
       }
-      alert('Simulated: download all documents (tickets + invoice + act) as ZIP/PDF package.')
+      alert('Заглушка: скачивание полного пакета документов')
    }
 
-   // -------- INLINE AI-ASSISTANT LOGIC --------
+   // ------------------ AI ASSISTANT -----------------------
 
    const hasDocsIssues = passengers.some(p => p.kind === 'EMPLOYEE' && !employeeHasValidDocs((p as PassengerEmployee).employeeId))
 
    const aiHints: string[] = []
+   if (passengersCount === 0) aiHints.push('Добавьте хотя бы одного пассажира.')
+   else aiHints.push(`Пассажиров в заказе: ${passengersCount}.`)
 
-   if (passengersCount === 0) {
-      aiHints.push('Вы ещё не добавили ни одного пассажира. Начните с сотрудника или гостя.')
-   } else {
-      aiHints.push(`Пассажиров в заказе: ${passengersCount}.`)
-   }
+   if (hasDocsIssues) aiHints.push('У некоторых сотрудников нет валидных документов. Проверьте паспорта/ID.')
 
-   if (hasDocsIssues) {
-      aiHints.push('У одного или нескольких сотрудников нет валидных документов (паспорт/ID). Добавьте или обновите документы, чтобы избежать проблем при вылете.')
-   }
+   if (flightPolicy === 'WARN') aiHints.push('Рейс выходит за мягкие ограничения travel-политики (WARN). В реальном OBT могло бы требоваться согласование.')
 
-   if (flightPolicy === 'WARN') {
-      aiHints.push('Этот рейс выходит за мягкие ограничения travel-политики (WARN). В реальном продукте может потребоваться согласование или выбор более дешёвого варианта.')
-   }
+   if (flightPolicy === 'BLOCK') aiHints.push('Рейс заблокирован политикой. Покупка невозможна.')
 
-   if (flightPolicy === 'BLOCK') {
-      aiHints.push('Рейс заблокирован travel-политикой (BLOCK). В этом прототипе покупка недоступна — попробуйте выбрать другой рейс.')
-   }
+   if (paymentMethod === 'PERSONAL_CARD') aiHints.push('При оплате личной картой закрывающие документы обычно не формируются.')
 
-   if (paymentMethod === 'PERSONAL_CARD') {
-      aiHints.push(
-         'Вы выбрали оплату личной картой. В этом режиме закрывающие документы обычно недоступны — используйте баланс компании или корпоративную карту для full B2B-комплаенса.',
-      )
-   } else {
-      aiHints.push('Выбран корпоративный способ оплаты. Закрывающие документы будут сформированы и доступны на странице «Документы».')
-   }
+   if (company.tariff === 'POSTPAY') aiHints.push(`Тариф Postpay: счёт должен быть оплачен компанией в течение ${company.postpayDueDays} дней.`)
 
-   if (company.tariff === 'POSTPAY') {
-      aiHints.push(`Тариф Postpay: покупка уйдёт в отложенный платёж, счёт нужно будет оплатить в течение ${company.postpayDueDays} дней.`)
-   }
-
-   if (company.tariff === 'FLEX') {
-      aiHints.push('Тариф Flex: в реальном продукте вы могли бы бесплатно менять билеты и расширять условия возврата.')
-   }
+   if (company.tariff === 'FLEX') aiHints.push('Тариф Flex: расширенные условия возврата и обменов.')
 
    const hasProblems = hasDocsIssues || flightPolicy !== 'OK'
 
-   // -------- RENDER --------
+   // ------------------ RENDER -----------------------
 
    return (
       <div className="space-y-6">
-         <SectionHeader title="Checkout" subtitle="Select passengers, payment method and confirm purchase." />
+         <SectionHeader title="Оформление" subtitle="Добавьте пассажиров, выберите оплату и подтвердите покупку." />
 
          <button className="text-xs text-slate-500 flex items-center gap-1 mb-2" onClick={() => nav(-1)}>
             <ArrowLeft size={14} />
-            Back
+            Назад
          </button>
 
-         {/* 1. FLIGHT SUMMARY + POLICY */}
+         {/* 1. Информация о рейсе */}
          <div className="card p-4 grid md:grid-cols-3 gap-4 text-sm">
             <div className="space-y-1">
-               <div className="text-xs text-slate-500">Selected flight</div>
+               <div className="text-xs text-slate-500">Рейс</div>
                <div className="font-semibold">
                   {selectedFlight.from} → {selectedFlight.to}
                </div>
                <div className="text-xs text-slate-600">
                   {selectedFlight.date} • {selectedFlight.depart} – {selectedFlight.arrive}
                </div>
-               <div className="text-xs text-slate-600">Carrier: {selectedFlight.carrier}</div>
+               <div className="text-xs text-slate-600">Авиакомпания: {selectedFlight.carrier}</div>
             </div>
+
             <div className="space-y-1 text-xs text-slate-600">
-               <div className="font-semibold text-[11px]">Price & policy</div>
+               <div className="font-semibold text-[11px]">Цена и политика</div>
                <div>
-                  Base price: <span className="font-medium">{selectedFlight.price.toLocaleString('ru-RU')} KZT</span>
+                  Цена за пассажира: <b>{selectedFlight.price.toLocaleString('ru-RU')} ₸</b>
                </div>
                <div>
-                  Total for {Math.max(passengersCount, 1)} pax: <span className="font-medium">{totalAmount.toLocaleString('ru-RU')} KZT</span>
+                  Всего ({passengersCount} чел): <b>{totalAmount.toLocaleString('ru-RU')} ₸</b>
                </div>
                <div className="mt-1 flex items-center gap-2">
                   <span className={`px-2 py-0.5 rounded-full text-[11px] ${flightPolicyBadgeClass}`}>{flightPolicy}</span>
                   <span className="text-[11px] text-slate-600">{flightPolicyLabel}</span>
                </div>
             </div>
+
             <div className="text-xs text-slate-500 flex items-start gap-2">
                <AlertTriangle size={14} className="mt-[2px] text-slate-400" />
-               <span>Policy thresholds are configured by admin in Company Settings. If flight is BLOCK, you cannot complete purchase in this prototype.</span>
+               Ограничения политики настраиваются администратором в настройках компании.
             </div>
          </div>
 
-         {/* 2. PASSENGERS BLOCK */}
+         {/* 2. Пассажиры */}
          <div className="card p-4 space-y-4 text-sm">
             <div className="flex items-center justify-between">
                <div className="flex items-center gap-2">
                   <Users size={16} className="text-slate-600" />
-                  <span className="font-semibold text-sm">Passengers</span>
+                  <span className="font-semibold text-sm">Пассажиры</span>
                </div>
-               <div className="text-xs text-slate-500">Multi-passenger booking for employees and their family members.</div>
+               <div className="text-xs text-slate-500">Сотрудники и гости.</div>
             </div>
 
-            {/* 2.1 Add employee passenger */}
+            {/* Добавить сотрудника */}
             <div className="grid md:grid-cols-2 gap-4 text-xs">
                <div className="space-y-2">
-                  <div className="font-semibold text-[11px]">Add employee</div>
+                  <div className="font-semibold text-[11px]">Добавить сотрудника</div>
                   <div className="flex gap-2">
                      <select className="select h-8 text-xs flex-1" value={employeeToAdd} onChange={e => setEmployeeToAdd(e.target.value)}>
                         {employees.map(e => (
@@ -331,102 +325,103 @@ export default function TicketPurchasePage() {
                            </option>
                         ))}
                      </select>
-                     <button className="btn-primary h-8 px-3 flex items-center gap-1 text-[11px]" type="button" onClick={addEmployeePassenger} disabled={!employeeToAdd}>
+
+                     <button className="btn-primary h-8 px-3 flex items-center gap-1 text-[11px]" onClick={addEmployeePassenger}>
                         <Plus size={12} />
-                        Add
+                        Добавить
                      </button>
                   </div>
-                  <div className="text-[11px] text-slate-500">Employee documents are taken from employee profile (passports/ID).</div>
                </div>
 
-               {/* 2.2 Add guest passenger */}
+               {/* Добавить гостя */}
                <div className="space-y-2">
-                  <div className="font-semibold text-[11px]">Add guest (family / non-employee)</div>
+                  <div className="font-semibold text-[11px]">Добавить гостя</div>
                   <div className="grid grid-cols-2 gap-2">
-                     <input className="input h-8 text-xs" placeholder="Full name" value={guestFullName} onChange={e => setGuestFullName(e.target.value)} />
-                     <input className="input h-8 text-xs" placeholder="Relation (e.g. Spouse, Child)" value={guestRelation} onChange={e => setGuestRelation(e.target.value)} />
-                     <input className="input h-8 text-xs" placeholder="Document number" value={guestDocNumber} onChange={e => setGuestDocNumber(e.target.value)} />
-                     <input type="date" className="input h-8 text-xs" placeholder="Expiration" value={guestDocExpiration} onChange={e => setGuestDocExpiration(e.target.value)} />
+                     <input className="input h-8 text-xs" placeholder="ФИО" value={guestFullName} onChange={e => setGuestFullName(e.target.value)} />
+                     <input className="input h-8 text-xs" placeholder="Отношение (например, супруг)" value={guestRelation} onChange={e => setGuestRelation(e.target.value)} />
+                     <input className="input h-8 text-xs" placeholder="Номер документа" value={guestDocNumber} onChange={e => setGuestDocNumber(e.target.value)} />
+                     <input type="date" className="input h-8 text-xs" value={guestDocExpiration} onChange={e => setGuestDocExpiration(e.target.value)} />
                   </div>
+
                   <div className="flex justify-end">
-                     <button className="btn-primary h-8 px-3 flex items-center gap-1 text-[11px]" type="button" onClick={addGuestPassenger} disabled={!guestFullName.trim()}>
+                     <button className="btn-primary h-8 px-3 flex items-center gap-1 text-[11px]" onClick={addGuestPassenger} disabled={!guestFullName.trim()}>
                         <Plus size={12} />
-                        Add guest
+                        Добавить гостя
                      </button>
                   </div>
                </div>
             </div>
 
-            {/* 2.3 List of passengers */}
+            {/* Список пассажиров */}
             <div className="border-t border-slate-100 pt-3 mt-1 space-y-2 text-xs">
-               <div className="font-semibold text-[11px] mb-1">{passengersCount === 0 ? 'No passengers added yet' : 'Passengers list'}</div>
-               {passengersCount > 0 && (
-                  <div className="space-y-2">
-                     {passengers.map(p => {
-                        if (p.kind === 'EMPLOYEE') {
-                           const emp = getEmployeeById(p.employeeId)
-                           const hasDocs = employeeHasValidDocs(p.employeeId)
-                           return (
-                              <div key={p.id} className="flex items-start justify-between px-2 py-2 rounded border border-slate-200 bg-slate-50">
-                                 <div className="flex items-start gap-2">
-                                    <User size={14} className="mt-0.5 text-slate-500" />
-                                    <div>
-                                       <div className="font-medium text-[13px]">{emp?.name || 'Unknown employee'}</div>
-                                       <div className="text-[11px] text-slate-500">
-                                          {emp?.email} • {emp?.department || 'No department'}
-                                       </div>
-                                       <div className="flex items-center gap-2 mt-1 text-[11px]">
-                                          <span
-                                             className={`px-1.5 py-0.5 rounded-full border text-[10px] ${
-                                                hasDocs ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'
-                                             }`}
-                                          >
-                                             {hasDocs ? 'Docs OK' : 'Docs missing/expired'}
-                                          </span>
-                                       </div>
-                                    </div>
+               <div className="font-semibold text-[11px] mb-1">{passengersCount === 0 ? 'Пассажиров нет' : 'Список пассажиров'}</div>
+
+               {passengers.map(p => {
+                  if (p.kind === 'EMPLOYEE') {
+                     const emp = getEmployeeById(p.employeeId)
+                     const hasDocs = employeeHasValidDocs(p.employeeId)
+                     return (
+                        <div key={p.id} className="flex items-start justify-between px-2 py-2 rounded border border-slate-200 bg-slate-50">
+                           <div className="flex items-start gap-2">
+                              <User size={14} className="mt-0.5 text-slate-500" />
+                              <div>
+                                 <div className="font-medium text-[13px]">{emp?.name}</div>
+                                 <div className="text-[11px] text-slate-500">
+                                    {emp?.email} • {emp?.department || 'Без отдела'}
                                  </div>
-                                 <button className="btn-ghost h-7 px-2 text-[11px] text-slate-500 flex items-center gap-1" onClick={() => removePassenger(p.id)}>
-                                    <Trash2 size={12} />
-                                    Remove
-                                 </button>
-                              </div>
-                           )
-                        } else {
-                           return (
-                              <div key={p.id} className="flex items-start justify-between px-2 py-2 rounded border border-slate-200 bg-white">
-                                 <div className="flex items-start gap-2">
-                                    <User size={14} className="mt-0.5 text-slate-500" />
-                                    <div>
-                                       <div className="font-medium text-[13px]">{p.fullName}</div>
-                                       <div className="text-[11px] text-slate-500">Guest • {p.relation || 'Family/Other'}</div>
-                                       <div className="text-[11px] text-slate-500 mt-1">
-                                          Doc: {p.docNumber || '—'}
-                                          {p.docExpiration && ` • exp: ${p.docExpiration}`}
-                                       </div>
-                                    </div>
+                                 <div className="mt-1 text-[11px]">
+                                    <span
+                                       className={`px-1.5 py-0.5 rounded-full border text-[10px] ${
+                                          hasDocs ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'
+                                       }`}
+                                    >
+                                       {hasDocs ? 'Документы OK' : 'Документы отсутствуют / просрочены'}
+                                    </span>
                                  </div>
-                                 <button className="btn-ghost h-7 px-2 text-[11px] text-slate-500 flex items-center gap-1" onClick={() => removePassenger(p.id)}>
-                                    <Trash2 size={12} />
-                                    Remove
-                                 </button>
                               </div>
-                           )
-                        }
-                     })}
-                  </div>
-               )}
+                           </div>
+
+                           <button className="btn-ghost h-7 px-2 text-[11px] text-slate-500 flex items-center gap-1" onClick={() => removePassenger(p.id)}>
+                              <Trash2 size={12} />
+                              Удалить
+                           </button>
+                        </div>
+                     )
+                  }
+
+                  return (
+                     <div key={p.id} className="flex items-start justify-between px-2 py-2 rounded border border-slate-200 bg-white">
+                        <div className="flex items-start gap-2">
+                           <User size={14} className="mt-0.5 text-slate-500" />
+                           <div>
+                              <div className="font-medium text-[13px]">{p.fullName}</div>
+                              <div className="text-[11px] text-slate-500">Гость • {p.relation}</div>
+                              <div className="text-[11px] text-slate-500 mt-1">
+                                 Документ: {p.docNumber || '—'}
+                                 {p.docExpiration && ` • истекает: ${p.docExpiration}`}
+                              </div>
+                           </div>
+                        </div>
+
+                        <button className="btn-ghost h-7 px-2 text-[11px] text-slate-500 flex items-center gap-1" onClick={() => removePassenger(p.id)}>
+                           <Trash2 size={12} />
+                           Удалить
+                        </button>
+                     </div>
+                  )
+               })}
             </div>
          </div>
 
-         {/* 3. PAYMENT & SUMMARY + INLINE AI ASSISTANT */}
+         {/* 3. Оплата и итог */}
          <div className="card p-4 grid md:grid-cols-3 gap-4 text-sm">
-            {/* 3.1 Payment methods */}
+            {/* Оплата */}
             <div className="md:col-span-2 space-y-3">
                <div className="flex items-center gap-2">
                   <CreditCard size={16} className="text-slate-600" />
-                  <span className="font-semibold text-sm">Payment method</span>
+                  <span className="font-semibold text-sm">Способ оплаты</span>
                </div>
+
                <div className="space-y-2 text-xs">
                   {allowedPaymentMethods.map(m => (
                      <label key={m} className="flex items-start gap-2 p-2 rounded border border-slate-200 hover:bg-slate-50 cursor-pointer">
@@ -434,10 +429,10 @@ export default function TicketPurchasePage() {
                         <div>
                            <div className="font-semibold text-[11px]">{paymentLabel(m)}</div>
                            <div className="text-[11px] text-slate-600">
-                              {m === 'COMPANY_BALANCE' && 'Pay from pre-loaded company balance; closing docs available.'}
-                              {m === 'CORP_CARD' && 'Pay with saved corporate card token; closing docs available.'}
-                              {m === 'POSTPAY' && 'Invoice will be issued and paid later within postpay due period.'}
-                              {m === 'PERSONAL_CARD' && 'Employee pays with personal card; closing docs usually not available.'}
+                              {m === 'COMPANY_BALANCE' && 'Оплата с баланса компании. Документы будут доступны.'}
+                              {m === 'CORP_CARD' && 'Оплата корпоративной картой. Документы будут доступны.'}
+                              {m === 'POSTPAY' && 'Отложенный платёж. Компания должна оплатить счёт позже.'}
+                              {m === 'PERSONAL_CARD' && 'Личная карта — закрывающие документы недоступны.'}
                            </div>
                         </div>
                      </label>
@@ -445,88 +440,90 @@ export default function TicketPurchasePage() {
                </div>
             </div>
 
-            {/* 3.2 Summary & actions + AI assistant */}
+            {/* Итог + AI помощник */}
             <div className="border-l border-slate-100 pl-0 md:pl-4 md:ml-4 text-xs flex flex-col justify-between">
                <div className="space-y-3">
                   <div className="space-y-2">
                      <div className="font-semibold text-sm flex items-center gap-2">
                         <Building2 size={16} className="text-slate-600" />
-                        Order summary
+                        Итог заказа
                      </div>
+
                      <div className="flex items-center justify-between">
-                        <span>Passengers</span>
+                        <span>Пассажиров</span>
                         <span className="font-medium">{passengersCount || 1}</span>
                      </div>
+
                      <div className="flex items-center justify-between">
-                        <span>Base price</span>
-                        <span>{selectedFlight.price.toLocaleString('ru-RU')} KZT</span>
+                        <span>Цена за 1 пассажира</span>
+                        <span>{selectedFlight.price.toLocaleString('ru-RU')} ₸</span>
                      </div>
-                     <div className="flex items-center justify-between">
-                        <span>Tariff</span>
-                        <span className="badge-soft text-[10px] uppercase">{company.tariff}</span>
-                     </div>
+
                      <div className="flex items-center justify-between border-t border-slate-200 pt-2 mt-2">
-                        <span className="font-semibold">Total</span>
-                        <span className="font-semibold">{totalAmount.toLocaleString('ru-RU')} KZT</span>
+                        <span className="font-semibold">Итого</span>
+                        <span className="font-semibold">{totalAmount.toLocaleString('ru-RU')} ₸</span>
                      </div>
+
                      <div className="mt-2 text-[11px] text-slate-500">
-                        Closing documents: <strong>{closingDocsAvailable ? 'will be generated' : 'not available'}</strong> ({paymentLabel(paymentMethod)}).
+                        Закрывающие документы: <strong>{closingDocsAvailable ? 'будут сформированы' : 'недоступны'}</strong>.
                      </div>
+
                      {flightPolicy === 'BLOCK' && (
                         <div className="mt-2 text-[11px] text-red-600 flex items-start gap-1">
                            <AlertTriangle size={12} className="mt-[2px]" />
-                           <span>This flight is blocked by travel policy. In this prototype purchase is disabled for BLOCK options.</span>
+                           Этот рейс заблокирован политикой — покупка невозможна.
                         </div>
                      )}
                   </div>
 
-                  {/* INLINE AI ASSISTANT BLOCK */}
+                  {/* AI помощник */}
                   <div
                      className={`
-                mt-3 p-3 rounded-lg border text-[11px] space-y-2
-                ${hasProblems ? 'border-amber-300 bg-amber-50/70' : 'border-emerald-200 bg-emerald-50/70'}
-              `}
+                       mt-3 p-3 rounded-lg border text-[11px] space-y-2
+                       ${hasProblems ? 'border-amber-300 bg-amber-50/70' : 'border-emerald-200 bg-emerald-50/70'}
+                     `}
                   >
                      <div className="flex items-center gap-2 text-slate-800">
                         <Sparkles size={14} className={hasProblems ? 'text-amber-600' : 'text-emerald-600'} />
-                        <span className="font-semibold">AI-помощник при оформлении</span>
+                        <span className="font-semibold">AI-подсказки</span>
                      </div>
-                     <div className="space-y-1">
-                        {aiHints.map((hint, idx) => (
-                           <div key={idx} className="flex items-start gap-1 text-slate-800">
-                              <span className="mt-[2px] select-none">•</span>
-                              <span>{hint}</span>
-                           </div>
-                        ))}
-                     </div>
+
+                     {aiHints.map((hint, idx) => (
+                        <div key={idx} className="flex items-start gap-1 text-slate-800">
+                           <span className="mt-[2px] select-none">•</span>
+                           <span>{hint}</span>
+                        </div>
+                     ))}
                   </div>
                </div>
 
+               {/* Кнопки */}
                <div className="mt-4 flex flex-col gap-2">
                   <button className="btn-primary w-full flex items-center justify-center gap-2 text-xs disabled:opacity-60" disabled={!canPurchase} onClick={handlePurchase}>
                      {purchaseStatus === 'PROCESSING' ? (
                         <>
                            <Loader2 size={14} className="animate-spin" />
-                           Issuing tickets…
+                           Оформление…
                         </>
                      ) : (
-                        'Confirm purchase'
+                        'Подтвердить покупку'
                      )}
                   </button>
+
                   {purchaseStatus === 'DONE' && (
                      <div className="mt-2 p-2 rounded border border-emerald-200 bg-emerald-50 text-[11px] text-emerald-700 flex items-start gap-2">
                         <CheckCircle2 size={14} className="mt-[2px]" />
                         <div>
-                           <div className="font-semibold">Order completed</div>
-                           <div className="mt-1">Tickets are issued in this prototype. You can now simulate document download.</div>
+                           <div className="font-semibold">Заказ оформлен</div>
+                           <div className="mt-1">Билеты и документы сформированы (в прототипе — заглушка).</div>
                            <div className="mt-2 flex flex-wrap gap-2">
                               <button className="btn-ghost h-7 px-2 text-[11px] flex items-center gap-1" onClick={handleDownloadTickets}>
                                  <FileText size={12} />
-                                 Download tickets
+                                 Скачать билеты
                               </button>
                               <button className="btn-ghost h-7 px-2 text-[11px] flex items-center gap-1" onClick={handleDownloadAllDocs}>
                                  <FileText size={12} />
-                                 Download all documents
+                                 Все документы
                               </button>
                            </div>
                         </div>

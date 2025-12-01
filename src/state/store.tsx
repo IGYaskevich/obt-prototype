@@ -167,6 +167,8 @@ type Store = {
    /** Документы сотрудников */
    getEmployeeById: (id: string) => Employee | undefined
    employeeHasValidDocs: (id: string) => boolean
+   addEmployeeDocument: (employeeId: string, doc: Omit<EmployeeDocument, 'status'>) => void
+   removeEmployeeDocument: (employeeId: string, docNumber: string) => void
 
    /** Тревел-политика */
    travelPolicy: TravelPolicyConfig
@@ -437,6 +439,30 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       return e.documents.some(d => d.status === 'VALID' && (d.type === 'PASSPORT' || d.type === 'ID_CARD'))
    }
 
+   /** Добавить/удалить документ сотрудника */
+   const addEmployeeDocument = (employeeId: string, doc: Omit<EmployeeDocument, 'status'>) => {
+      const today = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
+      const status: EmployeeDocumentStatus = doc.expirationDate && doc.expirationDate < today ? 'EXPIRED' : 'VALID'
+
+      const newDoc: EmployeeDocument = { ...doc, status }
+
+      setEmployees(prev =>
+         prev.map(e => {
+            if (e.id !== employeeId) return e
+
+            // если документ с таким номером уже есть — перезаписываем
+            const filtered = e.documents.filter(d => d.number !== doc.number)
+            return {
+               ...e,
+               documents: [...filtered, newDoc],
+            }
+         }),
+      )
+   }
+
+   const removeEmployeeDocument = (employeeId: string, docNumber: string) => {
+      setEmployees(prev => prev.map(e => (e.id === employeeId ? { ...e, documents: e.documents.filter(d => d.number !== docNumber) } : e)))
+   }
    /* === Тревел-политика === */
 
    const updateTravelPolicy = (cfg: Partial<TravelPolicyConfig>) => {
@@ -511,6 +537,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
          getEmployeeById,
          employeeHasValidDocs,
+         addEmployeeDocument,
+         removeEmployeeDocument,
 
          travelPolicy,
          updateTravelPolicy,

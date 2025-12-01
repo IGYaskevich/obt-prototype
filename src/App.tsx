@@ -42,9 +42,17 @@ function AppInner() {
    const location = useLocation()
 
    const isPublic = location.pathname.startsWith('/login') || location.pathname.startsWith('/signup')
+
+   const toggleQuickActions = (force?: boolean) => {
+      if (typeof force === 'boolean') {
+         setQuickOpen(force)
+      } else {
+         setQuickOpen(o => !o)
+      }
+   }
    return (
       <>
-         <HotkeysProvider toggleQuickActions={() => setQuickOpen(o => !o)} />
+         <HotkeysProvider toggleQuickActions={toggleQuickActions} />
 
          <Layout>
             <Routes>
